@@ -1,12 +1,12 @@
 #### Universidad Champagnat - Laboratorio de Desarrollo de Software - 2026
 
 # Proyecto Final
-## Grupo N° 1
+## Grupo N° 7
 
 ## Integrantes:
-- Nombre
-- Nombre
-- Nombre
+- Jeremias Sosa
+- Ivan Bustos
+- Emmanuel Bustos
 
 ## Problema que resuelve
 
