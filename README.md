@@ -7,6 +7,7 @@
 - Jeremias Sosa
 - Ivan Bustos
 - Emmanuel Bustos
+- Damian Lombardo
 
 ## Problema que resuelve
 Los freelancers y pequeñas agencias de desarrollo carecen de una herramienta centralizada que les permita gestionar simultáneamente sus proyectos, clientes y finanzas con visibilidad en tiempo real. Las soluciones existentes son genéricas, fragmentadas y no contemplan las necesidades específicas del trabajo técnico: seguimiento de stacks, repositorios, deadlines críticos y flujo de caja multimoneda. NEXUSSGE resuelve esto integrando todas esas dimensiones en un único sistema operativo de negocios.
