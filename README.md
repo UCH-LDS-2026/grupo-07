@@ -30,7 +30,7 @@ Base de datos / Backend: Supabase (PostgreSQL, autenticación y API en tiempo re
 
 Instrucciones
 # Clonar el repositorio
-git clone https://github.com/tu-usuario/nexussge.git
+git clone https://github.com/chinobustosdev/nexusssg.git
 
 # Instalar dependencias
 cd nexussge
