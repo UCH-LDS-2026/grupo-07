@@ -88,27 +88,7 @@ export default function Expenses({ currency, operatorId }: ExpensesProps) {
           <h1 className="text-lg font-bold text-white tracking-tight uppercase">Financial Command</h1>
           <span className="px-2 py-0.5 rounded-full bg-error/10 border border-error text-[10px] text-error font-bold neon-glow-red">NEXUS SGE</span>
         </div>
-        <div className="flex items-center gap-6">
-          <div className="relative focus-within:ring-1 focus-within:ring-cyan-500/50 rounded-lg">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">search</span>
-            <input
-              className="bg-black/40 border border-white/10 rounded-lg py-1.5 pl-10 pr-4 text-sm font-mono focus:outline-none focus:border-cyan-400/50 w-64"
-              placeholder="Search transactions..."
-              type="text"
-            />
-          </div>
-          <div className="flex items-center gap-4 text-neutral-400">
-            <button className="hover:text-cyan-400 transition-colors">
-              <span className="material-symbols-outlined">notifications</span>
-            </button>
-            <button className="hover:text-cyan-400 transition-colors">
-              <span className="material-symbols-outlined">account_circle</span>
-            </button>
-            <button className="bg-primary-container text-on-primary-container px-4 py-1.5 rounded-lg text-sm font-bold shadow-lg shadow-cyan-500/20 active:scale-95 transition-all">
-              Export CSV
-            </button>
-          </div>
-        </div>
+
       </header>
 
       {/* Main Content */}
@@ -120,13 +100,7 @@ export default function Expenses({ currency, operatorId }: ExpensesProps) {
               <p className="text-cyan-400 font-mono text-sm tracking-widest mb-1">TERMINAL // EXPENSES</p>
               <h2 className="text-3xl font-black tracking-tight text-white uppercase">Gastos Terminal</h2>
             </div>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="group flex items-center gap-3 bg-white/5 border border-cyan-400/30 px-6 py-3 rounded-xl hover:bg-cyan-400/10 transition-all neon-glow-cyan"
-            >
-              <span className="material-symbols-outlined text-cyan-400 group-hover:rotate-90 transition-transform">add</span>
-              <span className="font-bold text-white uppercase tracking-tight">Nuevo Gasto</span>
-            </button>
+
           </div>
 
           {/* KPI Grid */}

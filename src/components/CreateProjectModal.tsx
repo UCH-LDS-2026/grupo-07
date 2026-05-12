@@ -43,7 +43,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
       ></div>
       <form 
         onSubmit={handleCreateProject}
-        className="w-full max-w-2xl glass-card p-10 relative z-10 animate-in zoom-in-95 duration-300 border-primary-container/20 shadow-[0_0_50px_rgba(0,240,255,0.1)]"
+        className="w-full max-w-2xl glass-card p-10 relative z-10 animate-in zoom-in-95 duration-300 border-primary-container/20 shadow-[0_0_50px_rgba(0,240,255,0.1)] max-h-[90vh] !overflow-y-auto custom-scrollbar"
       >
         <div className="flex justify-between items-start mb-8">
           <div>

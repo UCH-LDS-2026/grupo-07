@@ -13,8 +13,45 @@ export default function Dashboard({ projects, currency }: DashboardProps) {
     { label: 'INGRESOS', value: `${currency}${totalIncome.toLocaleString()}`, change: totalIncome > 0 ? '+100%' : '0%', subtext: 'basado en abonos', icon: 'trending_up', color: 'text-green-500' },
     { label: 'GASTOS', value: `${currency}0.00`, change: '0%', subtext: 'esperando datos', icon: 'account_balance_wallet', color: 'text-red-400' },
     { label: 'PROYECTOS', value: activeProjectsCount.toString(), change: activeProjectsCount > 0 ? '+100%' : '0%', subtext: 'activos en terminal', icon: 'rocket_launch', color: 'text-primary-container' },
-    { label: 'VENTAS', value: activeProjectsCount.toString(), change: '0%', subtext: 'esperando datos', icon: 'shopping_cart', color: 'text-primary-container' },
   ];
+
+  const averageProgress = activeProjectsCount > 0 
+    ? projects.reduce((acc, p) => acc + (p.progress || 0), 0) / activeProjectsCount 
+    : 0;
+
+  const nexusScore = activeProjectsCount === 0 
+    ? 0 
+    : Math.min(99, Math.round(40 + (activeProjectsCount * 5) + (averageProgress * 0.3)));
+  
+  const scoreOffset = 364 - (364 * nexusScore / 100);
+
+  const baseForecast = Math.min(100, activeProjectsCount * 12 + (totalIncome > 0 ? 10 : 0));
+  const forecastData = activeProjectsCount === 0 
+    ? [0, 0, 0, 0, 0, 0, 0] 
+    : [
+        baseForecast * 0.4, 
+        baseForecast * 0.65, 
+        baseForecast * 0.45, 
+        baseForecast * 0.9, 
+        baseForecast * 0.55, 
+        baseForecast * 0.75, 
+        baseForecast * 0.85
+      ];
+
+  const activityLevel = Math.min(100, activeProjectsCount * 15);
+  const amp = activityLevel * 0.5;
+  const baseLine = 90 - (activityLevel * 0.4);
+  
+  const pathData = activeProjectsCount === 0
+    ? `M 0 95 L 400 95`
+    : `M 0 ${baseLine} Q 50 ${baseLine - amp}, 100 ${baseLine} T 200 ${baseLine} T 300 ${baseLine - amp * 0.8} T 400 ${baseLine - amp * 0.5}`;
+  
+  const fillPathData = activeProjectsCount === 0
+    ? `M 0 95 L 400 95 L 400 100 L 0 100 Z`
+    : `${pathData} L 400 100 L 0 100 Z`;
+
+  const volatility = activeProjectsCount === 0 ? "NULA [0%]" : `MEDIA [${(activeProjectsCount * 1.2).toFixed(1)}%]`;
+  const trend = activeProjectsCount === 0 ? "FLAT" : "BULLISH";
 
 
 
@@ -33,22 +70,7 @@ export default function Dashboard({ projects, currency }: DashboardProps) {
           </p>
         </div>
         
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <span className="absolute inset-y-0 left-3 flex items-center text-outline">
-              <span className="material-symbols-outlined text-sm">search</span>
-            </span>
-            <input 
-              type="text" 
-              placeholder="Buscar parámetros..." 
-              className="bg-black/40 border border-white/10 rounded-full pl-10 pr-4 py-2 text-xs text-white focus:border-primary-container outline-none w-64 font-space"
-            />
-          </div>
-          <button className="bg-primary-container text-on-primary px-6 py-2 rounded-full font-space font-bold text-[10px] uppercase tracking-widest hover:brightness-110 transition-all flex items-center gap-2">
-            <span className="material-symbols-outlined text-sm">export_notes</span>
-            Exportar Datos
-          </button>
-        </div>
+
       </header>
 
       {/* Stats Grid */}
@@ -97,7 +119,7 @@ export default function Dashboard({ projects, currency }: DashboardProps) {
             </div>
           </div>
           <div className="flex items-end justify-between h-48 gap-2 px-2">
-            {[40, 65, 45, 90, 55, 75, 85].map((h, i) => (
+            {forecastData.map((h, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-4 group">
                 <div 
                   className="w-full bg-gradient-to-t from-primary-container/20 to-primary-container rounded-t-sm group-hover:brightness-125 transition-all duration-500" 
@@ -115,16 +137,16 @@ export default function Dashboard({ projects, currency }: DashboardProps) {
            <div className="h-40 relative">
              <svg className="w-full h-full" viewBox="0 0 400 100" preserveAspectRatio="none">
                <path 
-                d="M 0 60 Q 50 10, 100 60 T 200 60 T 300 30 T 400 50" 
+                d={pathData} 
                 fill="none" 
                 stroke="var(--primary-container)" 
                 strokeWidth="3" 
-                className="drop-shadow-[0_0_8px_rgba(0,240,255,0.5)]"
+                className="drop-shadow-[0_0_8px_rgba(0,240,255,0.5)] transition-all duration-1000"
                />
                <path 
-                d="M 0 60 Q 50 10, 100 60 T 200 60 T 300 30 T 400 50 L 400 100 L 0 100 Z" 
+                d={fillPathData} 
                 fill="url(#grad)" 
-                className="opacity-20"
+                className="opacity-20 transition-all duration-1000"
                />
                <defs>
                  <linearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -133,16 +155,16 @@ export default function Dashboard({ projects, currency }: DashboardProps) {
                  </linearGradient>
                </defs>
              </svg>
-             <div className="absolute top-1/2 left-3/4 w-3 h-3 rounded-full bg-primary-container shadow-[0_0_10px_rgba(0,240,255,1)]"></div>
+             <div className="absolute w-3 h-3 rounded-full bg-primary-container shadow-[0_0_10px_rgba(0,240,255,1)] transition-all duration-1000" style={{ top: `${activeProjectsCount === 0 ? 95 : baseLine - amp * 0.8}%`, left: '75%', transform: 'translate(-50%, -50%)' }}></div>
            </div>
            <div className="mt-6 flex justify-between">
              <div>
                 <p className="text-[9px] text-outline font-space uppercase">Volatilidad</p>
-                <p className="text-white text-xs font-bold font-space uppercase">Baja [4.2%]</p>
+                <p className="text-white text-xs font-bold font-space uppercase">{volatility}</p>
              </div>
              <div className="text-right">
                 <p className="text-[9px] text-outline font-space uppercase">Tendencia</p>
-                <p className="text-primary-container text-xs font-bold font-space uppercase">Bullish</p>
+                <p className="text-primary-container text-xs font-bold font-space uppercase">{trend}</p>
              </div>
            </div>
         </div>
@@ -153,11 +175,11 @@ export default function Dashboard({ projects, currency }: DashboardProps) {
           <div className="relative w-32 h-32 mb-6">
             <svg className="w-full h-full transform -rotate-90">
               <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-white/5" />
-              <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray={364} strokeDashoffset={36.4} className="text-primary-container drop-shadow-[0_0_5px_rgba(0,240,255,0.8)]" />
+              <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray={364} strokeDashoffset={scoreOffset} className="text-primary-container drop-shadow-[0_0_5px_rgba(0,240,255,0.8)] transition-all duration-1000" />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-black text-white font-outfit">91%</span>
-              <span className="text-[8px] font-space text-primary-container font-bold">OPTIMIZADO</span>
+              <span className="text-3xl font-black text-white font-outfit">{nexusScore}%</span>
+              <span className="text-[8px] font-space text-primary-container font-bold">{nexusScore > 0 ? 'OPTIMIZADO' : 'ESPERANDO'}</span>
             </div>
           </div>
           <p className="text-[9px] text-outline font-space uppercase leading-relaxed max-w-[180px]">

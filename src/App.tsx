@@ -256,10 +256,42 @@ function App() {
     const budget = parseFloat(projectData.budget) || 0;
     const paid = parseFloat(projectData.paid) || 0;
 
-    const { data: newProject, error } = await supabase
-      .from('projects')
-      .insert([{
-        operator_id: currentUser.id,
+    try {
+      const { data: newProject, error } = await supabase
+        .from('projects')
+        .insert([{
+          operator_id: currentUser?.id || 'demo-user',
+          title: projectData.title,
+          client: projectData.client,
+          purpose: projectData.purpose,
+          tech: projectData.tech,
+          deadline: projectData.deadline,
+          status: 'ACTIVE',
+          progress: 0,
+          git_repo: projectData.gitRepo,
+          drive_url: projectData.driveUrl,
+          budget,
+          paid
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (newProject) {
+        const mappedProject: Project = {
+          ...newProject,
+          tags: newProject.tech ? newProject.tech.split(',').map((t: string) => t.trim()) : [],
+          icon: 'rocket_launch'
+        };
+        setProjects(prev => [...prev, mappedProject]);
+        if (currentUser?.id) fetchAppData(currentUser.id);
+      }
+    } catch (err: any) {
+      console.error("Database Error:", err);
+      // Fallback to local state if database fails (e.g. dummy credentials)
+      const mockProject: Project = {
+        id: Date.now(),
         title: projectData.title,
         client: projectData.client,
         purpose: projectData.purpose,
@@ -267,23 +299,37 @@ function App() {
         deadline: projectData.deadline,
         status: 'ACTIVE',
         progress: 0,
-        git_repo: projectData.gitRepo,
-        drive_url: projectData.driveUrl,
+        gitRepo: projectData.gitRepo,
+        driveUrl: projectData.driveUrl,
         budget,
-        paid
-      }])
-      .select()
-      .single();
-
-    if (newProject && !error) {
-      const mappedProject: Project = {
-        ...newProject,
-        tags: newProject.tech ? newProject.tech.split(',').map((t: string) => t.trim()) : [],
+        paid,
+        tags: projectData.tech ? projectData.tech.split(',').map((t: string) => t.trim()) : [],
         icon: 'rocket_launch'
       };
-      setProjects(prev => [...prev, mappedProject]);
-      // Re-fetch app data to sync clients
-      fetchAppData(currentUser.id);
+      
+      setProjects(prev => [...prev, mockProject]);
+      
+      setClients(prev => {
+        const existing = prev.find(c => c.name === projectData.client);
+        if (existing) {
+          return prev.map(c => c.name === projectData.client ? {
+            ...c, projects: c.projects + 1, billing: c.billing + budget, paid: c.paid + paid
+          } : c);
+        } else {
+          return [...prev, {
+            name: projectData.client,
+            email: 'contacto@' + projectData.client.toLowerCase().replace(/\s+/g, '') + '.com',
+            company: projectData.client,
+            projects: 1,
+            billing: budget,
+            paid: paid,
+            status: 'Active',
+            img: `https://i.pravatar.cc/150?u=${projectData.client}`
+          }];
+        }
+      });
+      
+      alert(`Aviso: Guardado en modo local (Offline). \nNo se pudo conectar a la base de datos: ${err.message}`);
     }
   };
 
