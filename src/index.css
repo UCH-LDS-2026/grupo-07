@@ -125,3 +125,6 @@ body {
 .status-qa { color: #cf5cff; background: rgba(207, 92, 255, 0.1); border: 1px solid rgba(207, 92, 255, 0.2); }
 .status-done { color: #22c55e; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.2); }
 
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}

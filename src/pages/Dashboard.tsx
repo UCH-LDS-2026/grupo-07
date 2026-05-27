@@ -1,278 +1,554 @@
-
+import { useState, useEffect } from 'react';
+import { 
+  FiActivity, FiCpu, FiArrowUpRight, FiLayers
+} from 'react-icons/fi';
+import { Terminal as TerminalIcon, CheckSquare, Check, ExternalLink, HardDrive, Settings, Trash2, Github, FolderOpen } from 'lucide-react';
+import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { supabase } from '../lib/supabase';
 
 interface DashboardProps {
-  projects: any[];
-  currency: string;
+  currency?: string;
+  projects?: any[];
+  expenses?: any[];
 }
 
-export default function Dashboard({ projects, currency }: DashboardProps) {
-  const activeProjectsCount = projects.length;
-  const totalIncome = projects.reduce((acc, p) => acc + (p.paid || 0), 0);
+export default function Dashboard({ currency = '$' }: DashboardProps) {
+  const [projectCount, setProjectCount] = useState(0);
+  const [totalPaid, setTotalPaid] = useState(0);
+  const [totalExpenses, setTotalExpenses] = useState(0);
+  const [realLogs, setRealLogs] = useState<any[]>([]);
+  const [lineData, setLineData] = useState<any[]>([]);
   
-  const dynamicStats = [
-    { label: 'INGRESOS', value: `${currency}${totalIncome.toLocaleString()}`, change: totalIncome > 0 ? '+100%' : '0%', subtext: 'basado en abonos', icon: 'trending_up', color: 'text-green-500' },
-    { label: 'GASTOS', value: `${currency}0.00`, change: '0%', subtext: 'esperando datos', icon: 'account_balance_wallet', color: 'text-red-400' },
-    { label: 'PROYECTOS', value: activeProjectsCount.toString(), change: activeProjectsCount > 0 ? '+100%' : '0%', subtext: 'activos en terminal', icon: 'rocket_launch', color: 'text-primary-container' },
+  // Tasks CRUD
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [newTaskText, setNewTaskText] = useState("");
+  const [isTaskLoading, setIsTaskLoading] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Operational Links
+  const [opLinks, setOpLinks] = useState<any[]>([]);
+  const [isManagingLinks, setIsManagingLinks] = useState(false);
+  const [newLink, setNewLink] = useState({ title: '', url: '', icon: 'drive' });
+  const [isLinkLoading, setIsLinkLoading] = useState(false);
+
+  useEffect(() => {
+    const initFetch = async () => {
+      // Obtener el usuario actual
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUserId = session?.user?.id || null;
+      setUserId(currentUserId);
+
+      if (!currentUserId) return;
+
+      try {
+        // 1. Conteo real de proyectos
+        const { count: countProjects } = await supabase
+          .from('projects')
+          .select('*', { count: 'exact', head: true })
+          .eq('operator_id', currentUserId);
+        setProjectCount(countProjects || 0);
+
+        // 2. Suma real de facturas pagadas (Ingresos) y Mapeo del Gráfico
+        const { data: userInvoices, error: invoicesError } = await supabase
+          .from('invoices')
+          .select('amount, created_at')
+          .eq('status', 'paid');
+          
+        if (invoicesError) {
+          console.error("Error fetching invoices:", invoicesError.message);
+        }
+        
+        let sumPaid = 0;
+        const monthlyData = [
+          { name: 'Ene', ingresos: 0 },
+          { name: 'Feb', ingresos: 0 },
+          { name: 'Mar', ingresos: 0 },
+          { name: 'Abr', ingresos: 0 },
+          { name: 'May', ingresos: 0 },
+          { name: 'Jun', ingresos: 0 },
+          { name: 'Jul', ingresos: 0 },
+          { name: 'Ago', ingresos: 0 },
+          { name: 'Sep', ingresos: 0 },
+          { name: 'Oct', ingresos: 0 },
+          { name: 'Nov', ingresos: 0 },
+          { name: 'Dic', ingresos: 0 },
+        ];
+
+        userInvoices?.forEach(inv => {
+          const amount = Number(inv.amount) || 0;
+          sumPaid += amount;
+
+          if (inv.created_at) {
+            const date = new Date(inv.created_at);
+            const monthIndex = date.getMonth(); // 0 a 11
+            monthlyData[monthIndex].ingresos += amount;
+          }
+        });
+
+        // Opcional: mostrar solo hasta el mes actual para que la curva termine hoy
+        const currentMonth = new Date().getMonth();
+        const dynamicLineData = monthlyData.slice(0, currentMonth + 1);
+
+        setTotalPaid(sumPaid);
+        setLineData(dynamicLineData);
+
+        // 3. Suma real de gastos
+        const { data: expensesData } = await supabase
+          .from('expenses')
+          .select('amount')
+          .eq('operator_id', currentUserId);
+        const sumExpenses = expensesData?.reduce((acc, exp) => acc + (Number(exp.amount) || 0), 0) || 0;
+        setTotalExpenses(sumExpenses);
+
+        // 4. Mapeo dinámico para simular la terminal con datos reales del sistema
+        const { data: recentInvoices } = await supabase
+          .from('invoices')
+          .select('invoice_number, amount, status')
+          .order('created_at', { ascending: false })
+          .limit(3);
+
+        const logsBase = [
+          ...(recentInvoices || []).map(inv => ({
+            time: "Factura",
+            type: inv.status === 'paid' ? 'SUCCESS' : 'PENDING',
+            msg: `Registro ${inv.invoice_number || 'N/A'} por ${currency}${Number(inv.amount).toLocaleString('es-AR')}`,
+            color: inv.status === 'paid' ? 'text-green-400' : 'text-amber-400'
+          })),
+          { time: "SYS", type: "LOG", msg: "Sincronización con base de datos Supabase ok.", color: "text-cyan-400" },
+        ];
+        setRealLogs(logsBase);
+
+        // 5. Traer las tareas y links de la base de datos
+        fetchTasks(currentUserId);
+        fetchOpLinks(currentUserId);
+
+      } catch (err) {
+        console.error("Error al poblar las métricas del dashboard:", err);
+      }
+    };
+
+    initFetch();
+  }, [currency]);
+
+  const fetchTasks = async (uid: string) => {
+    const { data: tasksData, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('operator_id', uid)
+      .order('created_at', { ascending: true });
+    
+    if (!error && tasksData) {
+      setTasks(tasksData);
+    }
+  };
+
+  const fetchOpLinks = async (uid: string) => {
+    const { data, error } = await supabase
+      .from('operator_links')
+      .select('*')
+      .eq('operator_id', uid)
+      .order('created_at', { ascending: true });
+    
+    if (!error && data) {
+      setOpLinks(data);
+    }
+  };
+
+  const handleAddLink = async () => {
+    if (!newLink.title || !newLink.url || !userId) return;
+    setIsLinkLoading(true);
+    const { error } = await supabase.from('operator_links').insert([{
+      operator_id: userId,
+      title: newLink.title,
+      url: newLink.url,
+      icon: newLink.icon
+    }]);
+    if (!error) {
+      setIsManagingLinks(false);
+      setNewLink({ title: '', url: '', icon: 'drive' });
+      await fetchOpLinks(userId);
+    } else {
+      console.error("Error adding link:", error);
+    }
+    setIsLinkLoading(false);
+  };
+
+  const getLinkIcon = (iconType: string) => {
+    switch (iconType) {
+      case 'github': return <Github size={14} className="shrink-0" />;
+      case 'drive': return <FolderOpen size={14} className="shrink-0" />;
+      default: return <ExternalLink size={14} className="shrink-0" />;
+    }
+  };
+
+  const getLinkColor = (iconType: string) => {
+    switch (iconType) {
+      case 'github': return { text: 'text-cyan-400', hover: 'hover:text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500/20', border: 'border-cyan-500/20' };
+      case 'drive': return { text: 'text-green-400', hover: 'hover:text-green-400 hover:bg-green-500/10 hover:border-green-500/20', border: 'border-green-500/20' };
+      default: return { text: 'text-white/60', hover: 'hover:text-white hover:bg-white/10 hover:border-white/20', border: 'border-white/20' };
+    }
+  };
+
+  const handleDeleteLink = async (id: string) => {
+    if (!userId) return;
+    const { error } = await supabase.from('operator_links').delete().eq('id', id);
+    if (!error) {
+      await fetchOpLinks(userId);
+    } else {
+      console.error("Error deleting link:", error);
+    }
+  };
+
+  const handleAddTask = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && newTaskText.trim() !== '' && userId) {
+      setIsTaskLoading(true);
+      try {
+        const { error } = await supabase.from('tasks').insert([
+          {
+            text: newTaskText.trim(),
+            done: false,
+            operator_id: userId
+          }
+        ]);
+        
+        if (!error) {
+          setNewTaskText("");
+          await fetchTasks(userId);
+        } else {
+          console.error("Error inserting task:", error);
+        }
+      } finally {
+        setIsTaskLoading(false);
+      }
+    }
+  };
+
+  const toggleTask = async (task: any) => {
+    if (!userId) return;
+    
+    // Optimizacion optimista
+    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, done: !t.done } : t));
+    
+    const { error } = await supabase
+      .from('tasks')
+      .update({ done: !task.done })
+      .eq('id', task.id);
+
+    if (error) {
+      console.error("Error updating task:", error);
+      // Revertir si falla
+      await fetchTasks(userId);
+    }
+  };
+
+  // -- OPERACIONES EN TIEMPO REAL --
+  const netProfit = totalPaid - totalExpenses;
+  const personalSalary = netProfit > 0 ? netProfit * 0.7 : 0;
+  const agencyReserve = netProfit > 0 ? netProfit * 0.3 : 0;
+
+  const pieData = [
+    { name: 'Salario', value: 70, color: '#00f0ff' },
+    { name: 'Agencia', value: 30, color: '#cf5cff' },
   ];
 
-  const averageProgress = activeProjectsCount > 0 
-    ? projects.reduce((acc, p) => acc + (p.progress || 0), 0) / activeProjectsCount 
-    : 0;
-
-  const nexusScore = activeProjectsCount === 0 
-    ? 0 
-    : Math.min(99, Math.round(40 + (activeProjectsCount * 5) + (averageProgress * 0.3)));
-  
-  const scoreOffset = 364 - (364 * nexusScore / 100);
-
-  const baseForecast = Math.min(100, activeProjectsCount * 12 + (totalIncome > 0 ? 10 : 0));
-  const forecastData = activeProjectsCount === 0 
-    ? [0, 0, 0, 0, 0, 0, 0] 
-    : [
-        baseForecast * 0.4, 
-        baseForecast * 0.65, 
-        baseForecast * 0.45, 
-        baseForecast * 0.9, 
-        baseForecast * 0.55, 
-        baseForecast * 0.75, 
-        baseForecast * 0.85
-      ];
-
-  const activityLevel = Math.min(100, activeProjectsCount * 15);
-  const amp = activityLevel * 0.5;
-  const baseLine = 90 - (activityLevel * 0.4);
-  
-  const pathData = activeProjectsCount === 0
-    ? `M 0 95 L 400 95`
-    : `M 0 ${baseLine} Q 50 ${baseLine - amp}, 100 ${baseLine} T 200 ${baseLine} T 300 ${baseLine - amp * 0.8} T 400 ${baseLine - amp * 0.5}`;
-  
-  const fillPathData = activeProjectsCount === 0
-    ? `M 0 95 L 400 95 L 400 100 L 0 100 Z`
-    : `${pathData} L 400 100 L 0 100 Z`;
-
-  const volatility = activeProjectsCount === 0 ? "NULA [0%]" : `MEDIA [${(activeProjectsCount * 1.2).toFixed(1)}%]`;
-  const trend = activeProjectsCount === 0 ? "FLAT" : "BULLISH";
-
-
-
   return (
-    <main className="ml-64 min-h-screen p-8 lg:p-12 relative overflow-hidden bg-[#05070a]">
-      <div className="scanline-overlay"></div>
+    <div className="p-8 min-h-screen bg-[#05070a] text-white relative font-space">
+      <div className="scanline-overlay pointer-events-none"></div>
 
-      {/* Header HUD */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6 relative z-10">
-        <div>
-          <h1 className="text-white font-outfit text-4xl font-extrabold tracking-tighter">
-            NEXUS Analíticas / <span className="text-primary-container">IA Smart</span>
-          </h1>
-          <p className="text-outline font-space text-[10px] uppercase tracking-[0.2em] mt-2">
-            MÓDULO DE PREDICCIÓN AVANZADA [NEXUS]
-          </p>
-        </div>
-        
+      {/* ---------------- CABECERA ---------------- */}
+      <div className="mb-8 relative z-10">
+        <h1 className="text-3xl font-black uppercase italic tracking-tighter neon-text font-outfit text-left">Nexus_Dashboard</h1>
+        <p className="text-[10px] tracking-[0.4em] opacity-40 uppercase text-left">Módulo Operativo Activo</p>
+      </div>
 
-      </header>
-
-      {/* Stats Grid */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 relative z-10">
-        {dynamicStats.map((stat, i) => (
-          <div key={i} className="glass-card p-6 border-white/5 relative overflow-hidden group">
-            <div className="flex justify-between items-start mb-4">
-              <span className="text-outline font-space text-[10px] uppercase tracking-widest">{stat.label}</span>
-              <span className={`material-symbols-outlined ${stat.color} opacity-50 group-hover:opacity-100 transition-opacity`}>{stat.icon}</span>
-            </div>
-            <div className="text-2xl font-bold text-white font-outfit mb-1">{stat.value}</div>
-            <div className="flex items-center gap-2">
-              <span className={`text-[10px] font-bold font-space ${stat.color}`}>{stat.change}</span>
-              <span className="text-outline text-[9px] font-space uppercase">{stat.subtext}</span>
+      {/* ---------------- KPI CARDS CONECTADAS ---------------- */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 relative z-10 text-left">
+        {[
+          { label: 'Proyectos Activos', val: projectCount, isCurrency: false, icon: <FiLayers /> },
+          { label: 'Ingresos Históricos', val: totalPaid, isCurrency: true, icon: <FiArrowUpRight /> },
+          { label: 'Gastos Ejecutados', val: totalExpenses, isCurrency: true, icon: <FiActivity /> },
+          { label: 'Caja Agencia', val: agencyReserve, isCurrency: true, icon: <FiCpu /> }
+        ].map((s, i) => (
+          <div key={i} className="glass-card p-4 flex items-center gap-4">
+            <div className="text-cyan-400 opacity-50">{s.icon}</div>
+            <div>
+              <p className="text-[9px] uppercase opacity-40 tracking-widest">{s.label}</p>
+              <p className="text-lg font-bold font-outfit">
+                {s.isCurrency ? `${currency}${s.val.toLocaleString('es-AR', { maximumFractionDigits: 0 })}` : s.val}
+              </p>
             </div>
           </div>
         ))}
-        
-        {/* Balance Neto (Special Card) */}
-        <div className="glass-card p-6 bg-gradient-to-br from-primary-container/20 to-secondary-container/20 border-primary-container/30 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-20 transform translate-x-4 -translate-y-4">
-             <span className="material-symbols-outlined text-6xl text-primary-container">auto_awesome</span>
-          </div>
-          <div className="flex justify-between items-start mb-4">
-            <span className="text-white font-space text-[10px] uppercase tracking-widest">BALANCE NETO</span>
-            <span className="material-symbols-outlined text-white opacity-50">insights</span>
-          </div>
-          <div className="text-2xl font-bold text-white font-outfit mb-1">{currency}{totalIncome.toLocaleString()}</div>
-
-          <div className="text-[9px] font-space text-primary-container font-bold uppercase tracking-widest">Optimizado por NEXUS AI</div>
-          <div className="mt-4 flex gap-1">
-            {[1, 2, 3, 4, 5].map(i => <div key={i} className={`h-1 flex-1 rounded-full ${i < 5 ? 'bg-primary-container' : 'bg-white/10'}`}></div>)}
-          </div>
-        </div>
-      </section>
-
-      {/* Middle Row: Charts */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8 relative z-10">
-        {/* Bar Chart Section */}
-        <div className="glass-card p-8 lg:col-span-1 border-white/5">
-          <div className="flex justify-between items-center mb-10">
-            <h3 className="text-white font-outfit font-bold uppercase tracking-widest text-xs">Pronóstico de Ingresos</h3>
-            <div className="flex gap-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary-container"></div>
-              <div className="w-1.5 h-1.5 rounded-full bg-white/10"></div>
-            </div>
-          </div>
-          <div className="flex items-end justify-between h-48 gap-2 px-2">
-            {forecastData.map((h, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-4 group">
-                <div 
-                  className="w-full bg-gradient-to-t from-primary-container/20 to-primary-container rounded-t-sm group-hover:brightness-125 transition-all duration-500" 
-                  style={{ height: `${h}%` }}
-                ></div>
-                <span className="text-[8px] font-space text-outline uppercase">{['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM'][i]}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Market Activity Chart */}
-        <div className="glass-card p-8 lg:col-span-1 border-white/5">
-           <h3 className="text-white font-outfit font-bold uppercase tracking-widest text-xs mb-10">Actividad de Mercado</h3>
-           <div className="h-40 relative">
-             <svg className="w-full h-full" viewBox="0 0 400 100" preserveAspectRatio="none">
-               <path 
-                d={pathData} 
-                fill="none" 
-                stroke="var(--primary-container)" 
-                strokeWidth="3" 
-                className="drop-shadow-[0_0_8px_rgba(0,240,255,0.5)] transition-all duration-1000"
-               />
-               <path 
-                d={fillPathData} 
-                fill="url(#grad)" 
-                className="opacity-20 transition-all duration-1000"
-               />
-               <defs>
-                 <linearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
-                   <stop offset="0%" style={{ stopColor: 'var(--primary-container)', stopOpacity: 1 }} />
-                   <stop offset="100%" style={{ stopColor: 'var(--primary-container)', stopOpacity: 0 }} />
-                 </linearGradient>
-               </defs>
-             </svg>
-             <div className="absolute w-3 h-3 rounded-full bg-primary-container shadow-[0_0_10px_rgba(0,240,255,1)] transition-all duration-1000" style={{ top: `${activeProjectsCount === 0 ? 95 : baseLine - amp * 0.8}%`, left: '75%', transform: 'translate(-50%, -50%)' }}></div>
-           </div>
-           <div className="mt-6 flex justify-between">
-             <div>
-                <p className="text-[9px] text-outline font-space uppercase">Volatilidad</p>
-                <p className="text-white text-xs font-bold font-space uppercase">{volatility}</p>
-             </div>
-             <div className="text-right">
-                <p className="text-[9px] text-outline font-space uppercase">Tendencia</p>
-                <p className="text-primary-container text-xs font-bold font-space uppercase">{trend}</p>
-             </div>
-           </div>
-        </div>
-
-        {/* AI Score */}
-        <div className="glass-card p-8 lg:col-span-1 border-white/5 flex flex-col items-center justify-center text-center">
-          <h3 className="text-white font-outfit font-bold uppercase tracking-widest text-xs mb-8">Puntuación Nexus IA</h3>
-          <div className="relative w-32 h-32 mb-6">
-            <svg className="w-full h-full transform -rotate-90">
-              <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-white/5" />
-              <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray={364} strokeDashoffset={scoreOffset} className="text-primary-container drop-shadow-[0_0_5px_rgba(0,240,255,0.8)] transition-all duration-1000" />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-black text-white font-outfit">{nexusScore}%</span>
-              <span className="text-[8px] font-space text-primary-container font-bold">{nexusScore > 0 ? 'OPTIMIZADO' : 'ESPERANDO'}</span>
-            </div>
-          </div>
-          <p className="text-[9px] text-outline font-space uppercase leading-relaxed max-w-[180px]">
-            Predicción de éxito basada en 4.2k variables de mercado.
-          </p>
-        </div>
-      </section>
-
-      {/* Live Projects Table */}
-      <section className="glass-card overflow-hidden relative z-10 border-white/5">
-        <div className="px-8 py-6 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
-          <div className="flex items-center gap-4">
-            <h3 className="font-outfit text-xl text-white font-bold tracking-tight uppercase">Monitor de Proyectos Live</h3>
-            <span className="px-3 py-1 rounded-full bg-primary-container/10 border border-primary-container/30 text-primary-container text-[8px] font-bold font-space uppercase flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse"></span>
-              IA Analysis Active
-            </span>
-          </div>
-          <div className="flex items-center gap-4 text-outline">
-            <span className="material-symbols-outlined text-lg cursor-pointer hover:text-white transition-colors">filter_list</span>
-            <span className="material-symbols-outlined text-lg cursor-pointer hover:text-white transition-colors">more_vert</span>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead className="text-outline font-space text-[9px] uppercase tracking-widest bg-white/[0.02]">
-              <tr>
-                <th className="px-8 py-5 font-medium">NOMBRE DEL PROYECTO</th>
-                <th className="px-8 py-5 font-medium">LÍDER / AI ASSIGN</th>
-                <th className="px-8 py-5 font-medium">PROGRESO OBJETIVO</th>
-                <th className="px-8 py-5 font-medium">ESTADO</th>
-                <th className="px-8 py-5 font-medium">ROI ESTIMADO</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {projects.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-8 py-20 text-center text-outline font-space text-[10px] uppercase tracking-[0.4em]">
-                    Sin actividad de proyectos detectada
-                  </td>
-                </tr>
-              ) : (
-                projects.map((project, i) => (
-                  <tr key={i} className="hover:bg-white/[0.02] transition-colors group">
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-center">
-                          <span className="material-symbols-outlined text-primary-container group-hover:scale-110 transition-transform">{project.icon}</span>
-                        </div>
-                        <span className="text-white font-bold text-sm font-outfit uppercase tracking-tighter">{project.title}</span>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-3">
-                        <span className="text-on-surface-variant font-space text-[10px] font-bold uppercase">{project.client}</span>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6 w-64">
-                      <div className="flex items-center gap-4">
-                        <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
-                          <div className="h-full bg-primary-container" style={{ width: `${project.progress}%` }}></div>
-                        </div>
-                        <span className="text-[10px] font-space text-outline w-24">{project.progress}% completado</span>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <span className={`px-4 py-1.5 rounded-lg border text-[9px] font-bold font-space uppercase ${
-                        project.status === 'FINALIZADO' 
-                          ? 'bg-green-500/10 border-green-500/30 text-green-400' 
-                          : 'bg-primary-container/10 border-primary-container/30 text-primary-container'
-                      }`}>
-                        {project.status}
-                      </span>
-                    </td>
-                    <td className="px-8 py-6">
-                      <span className="text-white font-bold font-space text-sm">{currency}0.00</span>
-                    </td>
-
-                  </tr>
-                ))
-              )}
-            </tbody>
-
-          </table>
-        </div>
-      </section>
-
-      {/* Decorative Gradients */}
-      <div className="fixed top-0 left-0 w-full h-full -z-50 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-primary-container/5 blur-[180px]"></div>
-        <div className="absolute bottom-[-10%] left-[10%] w-[50%] h-[50%] rounded-full bg-secondary-container/5 blur-[150px]"></div>
       </div>
-    </main>
+
+      {/* ---------------- GRID CYBERPUNK OPERATIVO ---------------- */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6 relative z-10 text-left">
+        
+        {/* Gráfico de Flujo de Ingresos */}
+        <div className="lg:col-span-8 glass-card p-6 min-h-[300px] flex flex-col">
+          <h2 className="text-[10px] uppercase tracking-[0.3em] text-cyan-400 mb-6 flex items-center gap-2">
+            <FiActivity className="animate-pulse" /> Flujo de Ingresos Netos
+          </h2>
+          <div className="flex-1 w-full min-h-[200px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={lineData}>
+                <defs>
+                  <linearGradient id="colorIngresos" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#00f0ff" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#00f0ff" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="name" stroke="rgba(255,255,255,0.2)" fontSize={10} tickLine={false} axisLine={false} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#0d1515', border: '1px solid rgba(0,240,255,0.2)', borderRadius: '10px' }}
+                  itemStyle={{ color: '#00f0ff', fontSize: '12px' }}
+                />
+                <Area type="monotone" dataKey="ingresos" stroke="#00f0ff" fillOpacity={1} fill="url(#colorIngresos)" strokeWidth={3} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Gráfico Circular Dividido */}
+        <div className="lg:col-span-4 glass-card p-6 flex flex-col justify-between min-h-[300px]">
+           <div>
+              <p className="text-[10px] uppercase tracking-widest opacity-40 mb-1">Beneficio Personal (70%)</p>
+              <h3 className="text-3xl font-black font-outfit text-white mb-4">
+                {currency}{personalSalary.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+              </h3>
+           </div>
+
+           <div className="flex-1 relative min-h-[120px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    innerRadius="70%"
+                    outerRadius="90%"
+                    paddingAngle={8}
+                    dataKey="value"
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex items-center justify-center">
+                 <p className="text-[10px] font-bold text-cyan-400 tracking-widest">70/30</p>
+              </div>
+           </div>
+
+           <div className="mt-4 space-y-2">
+              <div className="flex justify-between text-[10px]">
+                 <span className="flex items-center gap-2 font-bold"><div className="w-2 h-2 rounded-full bg-cyan-400"></div> Salario</span>
+                 <span className="opacity-60">{currency}{personalSalary.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
+              </div>
+              <div className="flex justify-between text-[10px]">
+                 <span className="flex items-center gap-2 font-bold"><div className="w-2 h-2 rounded-full bg-purple-500"></div> Agencia</span>
+                 <span className="opacity-60">{currency}{agencyReserve.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
+              </div>
+           </div>
+        </div>
+
+        {/* Consola de Logs (Terminal viva) */}
+        <div className="lg:col-span-8 bg-[#030507] border border-white/10 rounded-2xl p-6 min-h-[250px] font-mono flex flex-col shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] relative overflow-hidden group">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-green-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <h2 className="text-[10px] uppercase tracking-[0.3em] text-green-400 mb-5 flex items-center gap-2 font-space">
+            <TerminalIcon size={14} /> Terminal de Automatizaciones
+          </h2>
+          <div className="flex-1 overflow-y-auto space-y-3 text-xs pr-2 custom-scrollbar">
+            {realLogs.length > 0 ? realLogs.map((log, i) => (
+              <div key={i} className="flex gap-3 hover:bg-white/[0.02] p-1 rounded transition-colors">
+                <span className="text-white/30 shrink-0">[{log.time}]</span>
+                <span className={`${log.color} font-bold shrink-0`}>{log.type}:</span>
+                <span className="text-white/70">{log.msg}</span>
+              </div>
+            )) : (
+              <div className="text-white/30 italic">Aún no hay operaciones registradas.</div>
+            )}
+            <div className="flex gap-3 mt-4 items-center">
+              <span className="text-green-500/80 font-bold">NEXUS_SYS &gt;</span>
+              <span className="w-2 h-4 bg-green-500 animate-pulse"></span>
+            </div>
+          </div>
+        </div>
+
+        {/* Task Board Crítico e Interactivo */}
+        <div className="lg:col-span-4 glass-card p-6 min-h-[250px] flex flex-col">
+          <h2 className="text-[10px] uppercase tracking-[0.3em] text-purple-400 mb-4 flex items-center gap-2 font-space">
+            <CheckSquare size={14} /> NEXUS_TASKS
+          </h2>
+          
+          <div className="mb-4 relative">
+            <input 
+              type="text" 
+              placeholder="Nueva tarea (Enter para guardar)..."
+              value={newTaskText}
+              onChange={e => setNewTaskText(e.target.value)}
+              onKeyDown={handleAddTask}
+              disabled={isTaskLoading}
+              className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-purple-500/50 transition-colors"
+            />
+            {isTaskLoading && (
+              <div className="absolute right-3 top-2.5">
+                <div className="w-3 h-3 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex-1 space-y-3 overflow-y-auto pr-2 custom-scrollbar">
+            {tasks.length > 0 ? tasks.map(task => (
+              <div 
+                key={task.id} 
+                onClick={() => toggleTask(task)}
+                className="flex items-start gap-3 cursor-pointer group select-none"
+              >
+                <div className={`mt-0.5 shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-all duration-300 ${task.done ? 'bg-purple-500 border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.4)]' : 'border-white/20 group-hover:border-purple-400/50'}`}>
+                  {task.done && <Check size={12} strokeWidth={4} className="text-white" />}
+                </div>
+                <span className={`text-xs font-space transition-all duration-300 ${task.done ? 'line-through text-white/30 decoration-purple-500/50' : 'text-white/80 group-hover:text-white'}`}>
+                  {task.text}
+                </span>
+              </div>
+            )) : (
+              <div className="text-[10px] text-white/30 text-center py-4">Directorio de tareas vacío.</div>
+            )}
+          </div>
+        </div>
+
+        {/* NEXUS_ECOSYSTEM: Enlaces Operativos Unificados */}
+        <div className="lg:col-span-12 glass-card p-6 border-l-2 border-l-primary-container/50 relative mt-2">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-[10px] uppercase tracking-[0.3em] text-primary-container flex items-center gap-2">
+              <ExternalLink size={14} /> ENLACES OPERATIVOS
+            </h3>
+            <button 
+              onClick={() => setIsManagingLinks(!isManagingLinks)}
+              className={`p-1.5 rounded-lg transition-all ${
+                isManagingLinks ? 'bg-primary-container/20 text-primary-container' : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/80'
+              }`}
+            >
+              <Settings size={14} />
+            </button>
+          </div>
+
+          {/* Formulario con selector de tipo */}
+          {isManagingLinks && (
+            <div className="mb-5 p-4 bg-white/[0.02] border border-primary-container/20 rounded-xl animate-in fade-in slide-in-from-top-2">
+              <h4 className="text-[9px] text-primary-container font-space uppercase tracking-widest mb-3">Añadir Nuevo Enlace</h4>
+              
+              {/* Selector de Plataforma */}
+              <div className="flex gap-2 mb-3">
+                <button 
+                  onClick={() => setNewLink({ ...newLink, icon: 'github' })}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[9px] font-space font-bold uppercase tracking-widest transition-all border ${
+                    newLink.icon === 'github' 
+                      ? 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30 shadow-[0_0_10px_rgba(0,200,255,0.1)]' 
+                      : 'bg-white/[0.02] text-white/40 border-white/10 hover:bg-white/5 hover:text-white/70'
+                  }`}
+                >
+                  <Github size={14} /> GitHub Repo
+                </button>
+                <button 
+                  onClick={() => setNewLink({ ...newLink, icon: 'drive' })}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[9px] font-space font-bold uppercase tracking-widest transition-all border ${
+                    newLink.icon === 'drive' 
+                      ? 'bg-green-500/15 text-green-400 border-green-500/30 shadow-[0_0_10px_rgba(0,255,100,0.1)]' 
+                      : 'bg-white/[0.02] text-white/40 border-white/10 hover:bg-white/5 hover:text-white/70'
+                  }`}
+                >
+                  <FolderOpen size={14} /> Google Drive
+                </button>
+              </div>
+
+              <div className="space-y-3 mb-3">
+                <input 
+                  type="text" 
+                  placeholder={newLink.icon === 'github' ? 'Título (Ej. Repo Frontend E-commerce)' : 'Título (Ej. DRIVE CLIENTES)'}
+                  className="w-full bg-[#05070a] border border-white/10 rounded-md px-3 py-2 text-xs text-white outline-none focus:border-primary-container/50"
+                  value={newLink.title}
+                  onChange={e => setNewLink({ ...newLink, title: e.target.value })}
+                />
+                <input 
+                  type="text" 
+                  placeholder={newLink.icon === 'github' ? 'https://github.com/user/repo' : 'https://drive.google.com/...'}
+                  className="w-full bg-[#05070a] border border-white/10 rounded-md px-3 py-2 text-xs text-white outline-none focus:border-primary-container/50 font-mono"
+                  value={newLink.url}
+                  onChange={e => setNewLink({ ...newLink, url: e.target.value })}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button 
+                  onClick={() => { setIsManagingLinks(false); setNewLink({ title: '', url: '', icon: 'drive' }); }}
+                  className="py-1.5 px-4 rounded-md border border-white/10 text-white/50 text-[9px] uppercase font-space tracking-widest hover:bg-white/5 hover:text-white transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleAddLink}
+                  disabled={!newLink.title || !newLink.url || isLinkLoading}
+                  className="py-1.5 px-4 rounded-md bg-primary-container/20 text-primary-container font-bold text-[9px] uppercase font-space tracking-widest hover:bg-primary-container hover:text-on-primary transition-all disabled:opacity-50"
+                >
+                  {isLinkLoading ? 'Guardando...' : 'Guardar Enlace'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Grilla Unificada de Todos los Enlaces */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {opLinks.length > 0 ? opLinks.map(link => {
+              const colors = getLinkColor(link.icon);
+              return (
+                <div key={link.id} className="flex items-center gap-1">
+                  <a 
+                    href={link.url} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className={`flex-1 flex items-center gap-2.5 text-xs text-white/60 ${colors.hover} transition-all p-3 bg-white/[0.02] rounded-lg border border-transparent truncate group`}
+                  >
+                    <span className={`${colors.text} transition-colors`}>{getLinkIcon(link.icon)}</span>
+                    <span className="truncate group-hover:tracking-wider transition-all">{link.title}</span>
+                  </a>
+                  {isManagingLinks && (
+                    <button 
+                      onClick={() => handleDeleteLink(link.id)}
+                      className="p-2.5 shrink-0 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:scale-105 transition-all"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  )}
+                </div>
+              );
+            }) : (
+              <div className="col-span-full text-[10px] text-white/30 text-center py-6 border border-dashed border-white/10 rounded-xl">
+                No hay enlaces operativos configurados.
+                <br />
+                <button onClick={() => setIsManagingLinks(true)} className="mt-2 text-primary-container hover:underline font-bold">
+                  [+] Configurar Primer Enlace
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ---------------- ADVISORY BANNER ---------------- */}
+      <div className="glass-card border-l-4 border-l-cyan-500 p-6 bg-cyan-500/5 relative overflow-hidden z-10 text-left">
+        <div className="flex items-center gap-4 relative z-10">
+          <div className="p-2 bg-cyan-500/20 rounded-lg text-cyan-400">
+            <FiCpu size={20} />
+          </div>
+          <div>
+            <h2 className="text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-400 font-space mb-1">Nexus_Operational__Advisory</h2>
+            <p className="text-sm font-outfit text-white/80">
+              Salario mensual disponible: <span className="text-cyan-400 font-bold">{currency}{personalSalary.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>. 
+              {personalSalary > 1000 ? " Margen de liquidez saludable para distribución." : " Atención: Flujo de caja actual reducido. Monitorea cobranzas."}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

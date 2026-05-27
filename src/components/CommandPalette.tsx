@@ -22,8 +22,8 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ onNavigate }) => {
     { id: 'clients', label: 'Ver Directorio de Clientes', icon: 'group', shortcut: 'G C', action: () => onNavigate('clients'), category: 'Navegación' },
     { id: 'projects', label: 'Ver Proyectos', icon: 'account_tree', shortcut: 'G P', action: () => onNavigate('projects'), category: 'Navegación' },
     { id: 'expenses', label: 'Ver Finanzas', icon: 'payments', shortcut: 'G F', action: () => onNavigate('expenses'), category: 'Navegación' },
-    { id: 'new-client', label: 'Registrar Nuevo Cliente', icon: 'person_add', shortcut: 'N C', action: () => alert('Abriendo Formulario...'), category: 'Acciones' },
-    { id: 'focus', label: 'Activar Deep Work Mode', icon: 'bolt', shortcut: 'D W', action: () => alert('Sincronizando con NEXUS IA...'), category: 'Productividad' },
+    { id: 'new-client', label: 'Registrar Nuevo Cliente', icon: 'person_add', shortcut: 'N C', action: () => console.log('Abriendo Formulario...'), category: 'Acciones' },
+    { id: 'focus', label: 'Activar Deep Work Mode', icon: 'bolt', shortcut: 'D W', action: () => console.log('Sincronizando con NEXUS IA...'), category: 'Productividad' },
 
     { id: 'export', label: 'Exportar Reporte Financiero', icon: 'download', shortcut: 'E R', action: () => {}, category: 'Sistema' },
   ];

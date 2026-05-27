@@ -1,11 +1,20 @@
 import { useState } from 'react';
+import { supabase } from '../lib/supabase';
 
 interface CreateClientModalProps {
   isOpen: boolean;
   onClose: () => void;
+  userId: string;
+  onClientCreated: () => void;
 }
 
-const CreateClientModal: React.FC<CreateClientModalProps> = ({ isOpen, onClose }) => {
+const CreateClientModal: React.FC<CreateClientModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  userId, 
+  onClientCreated 
+}) => {
+  const [loading, setLoading] = useState(false);
   const [newClient, setNewClient] = useState({
     name: '',
     email: '',
@@ -14,25 +23,61 @@ const CreateClientModal: React.FC<CreateClientModalProps> = ({ isOpen, onClose }
     driveUrl: ''
   });
 
-  const handleCreateClient = (e: React.FormEvent) => {
+  const handleCreateClient = async (e: React.FormEvent) => {
     e.preventDefault();
-    // En una aplicación real, aquí enviaríamos los datos a la API/Base de datos
-    alert(`Protocolo de registro completado para: ${newClient.name}\nEntidad: ${newClient.company}`);
-    onClose();
+    
+    // Validación de seguridad: si no hay userId, no podemos guardar
+    if (!userId) {
+      console.error("Error de autenticación: No se detectó ID de operador.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Inserción en la tabla 'clients' con las nuevas columnas
+      const { error } = await supabase
+        .from('clients')
+        .insert([{
+          name: newClient.name,
+          email: newClient.email,
+          company: newClient.company,
+          phone: newClient.phone,
+          drive_url: newClient.driveUrl, // Mapeado a la columna drive_url de Supabase
+          operator_id: userId,          // Mapeado a la columna operator_id
+          status: 'Active'              // Mapeado a la columna status
+        }]);
+
+      if (error) throw error;
+
+      // Si todo sale bien:
+      onClientCreated(); // Avisa a App.tsx/Clients.tsx que refresque la lista
+      setNewClient({ name: '', email: '', company: '', phone: '', driveUrl: '' }); // Limpia el form
+      onClose(); // Cierra el modal
+      
+    } catch (err: any) {
+      console.error("Falla en el despliegue de datos:", err.message);
+      console.error(`ERROR NEXUS_DB: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      {/* Overlay con desenfoque */}
       <div 
         className="absolute inset-0 bg-black/80 backdrop-blur-md animate-in fade-in duration-300" 
         onClick={onClose}
       ></div>
+      
       <form 
         onSubmit={handleCreateClient}
         className="w-full max-w-2xl glass-card p-10 relative z-10 animate-in zoom-in-95 duration-300 border-primary-container/20 shadow-[0_0_50px_rgba(0,240,255,0.1)]"
       >
+        {/* Header del Modal */}
         <div className="flex justify-between items-start mb-8">
           <div>
             <h3 className="text-white font-outfit text-2xl font-bold uppercase tracking-tighter">Registro de Nueva Entidad</h3>
@@ -47,6 +92,7 @@ const CreateClientModal: React.FC<CreateClientModalProps> = ({ isOpen, onClose }
           </button>
         </div>
 
+        {/* Grid de Inputs */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="space-y-2">
             <label className="text-outline font-space text-[10px] uppercase tracking-widest ml-1">Nombre Completo</label>
@@ -111,12 +157,16 @@ const CreateClientModal: React.FC<CreateClientModalProps> = ({ isOpen, onClose }
           </div>
         </div>
 
+        {/* Botón de Acción */}
         <button 
           type="submit"
-          className="w-full py-4 rounded-2xl bg-gradient-to-r from-primary-container to-secondary-container text-on-primary font-space font-bold text-xs uppercase tracking-[0.2em] hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-primary-container/20 flex items-center justify-center gap-2"
+          disabled={loading}
+          className="w-full py-4 rounded-2xl bg-gradient-to-r from-primary-container to-secondary-container text-on-primary font-space font-bold text-xs uppercase tracking-[0.2em] hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-primary-container/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <span className="material-symbols-outlined text-sm">save</span>
-          SINCRONIZAR NUEVA ENTIDAD
+          <span className="material-symbols-outlined text-sm animate-spin-slow">
+            {loading ? 'sync' : 'save'}
+          </span>
+          {loading ? 'ESTABLECIENDO CONEXIÓN...' : 'SINCRONIZAR NUEVA ENTIDAD'}
         </button>
       </form>
     </div>
