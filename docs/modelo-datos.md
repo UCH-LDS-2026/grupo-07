@@ -16,3 +16,5 @@ Campos:
 
 ## Relaciones
 Explicación de cómo se relacionan las entidades.
+
+![Diagrama ER NEXUSS](diagrama-er.png)
