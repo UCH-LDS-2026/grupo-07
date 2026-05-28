@@ -125,6 +125,20 @@ VITE_SUPABASE_ANON_KEY=tu_supabase_anon_key
 ▶️ Ejecutar Proyecto
 npm run dev
 
+## 🏗️ Arquitectura del Sistema
+
+El frontend desarrollado en React se conecta con la base de datos PostgreSQL
+administrada por Supabase de manera directa mediante llamadas asíncronas.
+
+El flujo es el siguiente:
+
+1. El usuario interactúa con la interfaz React
+2. Se realizan llamadas asíncronas a la API REST de Supabase
+3. Supabase procesa la solicitud contra la base de datos PostgreSQL
+4. La respuesta regresa al frontend y actualiza la UI en tiempo real
+
+Esta arquitectura permite prescindir de un backend propio, reduciendo
+complejidad y tiempo de desarrollo.
 🌿 Estrategia de Ramas
 
 El equipo utiliza una estrategia basada en GitFlow Simplificado.
@@ -139,11 +153,10 @@ Reglas:
 ✅ Todo cambio pasa primero por develop
 ✅ Uso de Pull Requests para integración
 
-
-
 📊 Diagramas del Sistema
 
 📐 Diagrama de Clases
+
 ```mermaid
 classDiagram
     class Operador {
@@ -228,9 +241,7 @@ classDiagram
     GastoOperativo ..> Moneda
 ```
 
- 📌 Diagrama de Casos de Uso
-
-
+📌 Diagrama de Casos de Uso
 
 💡 Características Destacadas
 
