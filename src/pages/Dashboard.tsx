@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   FiActivity, FiCpu, FiArrowUpRight, FiLayers
 } from 'react-icons/fi';
-import { Terminal as TerminalIcon, CheckSquare, Check, ExternalLink, HardDrive, Settings, Trash2, Github, FolderOpen } from 'lucide-react';
+import { Terminal as TerminalIcon, CheckSquare, Check, ExternalLink, Settings, Trash2, Github, FolderOpen } from 'lucide-react';
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { supabase } from '../lib/supabase';
+import LanguageSelector from '../components/LanguageSelector';
 
 interface DashboardProps {
   currency?: string;
@@ -13,10 +15,13 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ currency = '$' }: DashboardProps) {
+  const { t } = useTranslation();
+
   const [projectCount, setProjectCount] = useState(0);
   const [totalPaid, setTotalPaid] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [realLogs, setRealLogs] = useState<any[]>([]);
+  const [terminalLogs, setTerminalLogs] = useState<any[]>([]);
   const [lineData, setLineData] = useState<any[]>([]);
   
   // Tasks CRUD
@@ -31,9 +36,10 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
   const [newLink, setNewLink] = useState({ title: '', url: '', icon: 'drive' });
   const [isLinkLoading, setIsLinkLoading] = useState(false);
 
+  const monthKeys = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+
   useEffect(() => {
     const initFetch = async () => {
-      // Obtener el usuario actual
       const { data: { session } } = await supabase.auth.getSession();
       const currentUserId = session?.user?.id || null;
       setUserId(currentUserId);
@@ -59,20 +65,10 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
         }
         
         let sumPaid = 0;
-        const monthlyData = [
-          { name: 'Ene', ingresos: 0 },
-          { name: 'Feb', ingresos: 0 },
-          { name: 'Mar', ingresos: 0 },
-          { name: 'Abr', ingresos: 0 },
-          { name: 'May', ingresos: 0 },
-          { name: 'Jun', ingresos: 0 },
-          { name: 'Jul', ingresos: 0 },
-          { name: 'Ago', ingresos: 0 },
-          { name: 'Sep', ingresos: 0 },
-          { name: 'Oct', ingresos: 0 },
-          { name: 'Nov', ingresos: 0 },
-          { name: 'Dic', ingresos: 0 },
-        ];
+        const monthlyData = monthKeys.map(k => ({
+          name: t(`dashboard.months.${k}`),
+          ingresos: 0
+        }));
 
         userInvoices?.forEach(inv => {
           const amount = Number(inv.amount) || 0;
@@ -80,12 +76,11 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
 
           if (inv.created_at) {
             const date = new Date(inv.created_at);
-            const monthIndex = date.getMonth(); // 0 a 11
+            const monthIndex = date.getMonth();
             monthlyData[monthIndex].ingresos += amount;
           }
         });
 
-        // Opcional: mostrar solo hasta el mes actual para que la curva termine hoy
         const currentMonth = new Date().getMonth();
         const dynamicLineData = monthlyData.slice(0, currentMonth + 1);
 
@@ -100,7 +95,7 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
         const sumExpenses = expensesData?.reduce((acc, exp) => acc + (Number(exp.amount) || 0), 0) || 0;
         setTotalExpenses(sumExpenses);
 
-        // 4. Mapeo dinámico para simular la terminal con datos reales del sistema
+        // 4. Terminal logs
         const { data: recentInvoices } = await supabase
           .from('invoices')
           .select('invoice_number, amount, status')
@@ -109,16 +104,15 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
 
         const logsBase = [
           ...(recentInvoices || []).map(inv => ({
-            time: "Factura",
+            time: t('dashboard.terminal.invoice'),
             type: inv.status === 'paid' ? 'SUCCESS' : 'PENDING',
-            msg: `Registro ${inv.invoice_number || 'N/A'} por ${currency}${Number(inv.amount).toLocaleString('es-AR')}`,
+            msg: `${t('dashboard.terminal.record')} ${inv.invoice_number || 'N/A'} ${t('dashboard.terminal.by')} ${currency}${Number(inv.amount).toLocaleString('es-AR')}`,
             color: inv.status === 'paid' ? 'text-green-400' : 'text-amber-400'
-          })),
-          { time: "SYS", type: "LOG", msg: "Sincronización con base de datos Supabase ok.", color: "text-cyan-400" },
+          }))
         ];
         setRealLogs(logsBase);
 
-        // 5. Traer las tareas y links de la base de datos
+        // 5. Tasks & Links
         fetchTasks(currentUserId);
         fetchOpLinks(currentUserId);
 
@@ -128,7 +122,28 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
     };
 
     initFetch();
-  }, [currency]);
+  }, [currency, t]);
+
+  useEffect(() => {
+    if (realLogs.length === 0 && projectCount === 0) return; // Esperar data real
+
+    const sequence = [
+      { time: 'SYS', type: 'INIT', msg: 'Iniciando módulo Emma-Nexus...', color: 'text-white/50', delay: 300 },
+      { time: 'SYS', type: 'STATUS', msg: 'Sincronización con base de datos Supabase ok.', color: 'text-green-400', delay: 1000 },
+      { time: 'SYS', type: 'AUTH', msg: 'Operador EMMANUEL BUSTOS en línea.', color: 'text-cyan-400', delay: 1800 },
+      ...realLogs.map((l, i) => ({ ...l, delay: 2500 + i * 400 }))
+    ];
+
+    setTerminalLogs([]);
+
+    const timeouts = sequence.map(item => 
+      setTimeout(() => {
+        setTerminalLogs(prev => [...prev, item]);
+      }, item.delay)
+    );
+
+    return () => timeouts.forEach(clearTimeout);
+  }, [realLogs, projectCount]);
 
   const fetchTasks = async (uid: string) => {
     const { data: tasksData, error } = await supabase
@@ -226,7 +241,6 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
   const toggleTask = async (task: any) => {
     if (!userId) return;
     
-    // Optimizacion optimista
     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, done: !t.done } : t));
     
     const { error } = await supabase
@@ -236,7 +250,6 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
 
     if (error) {
       console.error("Error updating task:", error);
-      // Revertir si falla
       await fetchTasks(userId);
     }
   };
@@ -247,30 +260,35 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
   const agencyReserve = netProfit > 0 ? netProfit * 0.3 : 0;
 
   const pieData = [
-    { name: 'Salario', value: 70, color: '#00f0ff' },
-    { name: 'Agencia', value: 30, color: '#cf5cff' },
+    { name: t('dashboard.chart.salary'), value: 70, color: '#00f0ff' },
+    { name: t('dashboard.chart.agencyLabel'), value: 30, color: '#cf5cff' },
   ];
 
   return (
-    <div className="p-8 min-h-screen bg-[#05070a] text-white relative font-space">
+    <div className="p-8 min-h-screen bg-[#05070a] text-white relative font-space transition-colors duration-500">
       <div className="scanline-overlay pointer-events-none"></div>
 
       {/* ---------------- CABECERA ---------------- */}
-      <div className="mb-8 relative z-10">
-        <h1 className="text-3xl font-black uppercase italic tracking-tighter neon-text font-outfit text-left">Nexus_Dashboard</h1>
-        <p className="text-[10px] tracking-[0.4em] opacity-40 uppercase text-left">Módulo Operativo Activo</p>
+      <div className="mb-8 relative z-10 flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-black uppercase italic tracking-tighter text-white neon-text font-outfit text-left transition-colors">{t('dashboard.title')}</h1>
+          <p className="text-[10px] tracking-[0.4em] text-white/40 uppercase text-left transition-colors">{t('dashboard.subtitle')}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <LanguageSelector />
+        </div>
       </div>
 
       {/* ---------------- KPI CARDS CONECTADAS ---------------- */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 relative z-10 text-left">
         {[
-          { label: 'Proyectos Activos', val: projectCount, isCurrency: false, icon: <FiLayers /> },
-          { label: 'Ingresos Históricos', val: totalPaid, isCurrency: true, icon: <FiArrowUpRight /> },
-          { label: 'Gastos Ejecutados', val: totalExpenses, isCurrency: true, icon: <FiActivity /> },
-          { label: 'Caja Agencia', val: agencyReserve, isCurrency: true, icon: <FiCpu /> }
+          { label: t('dashboard.kpi.projects'), val: projectCount, isCurrency: false, icon: <FiLayers />, colorClass: 'text-cyan-400', glowClass: 'glow-hover-cyan' },
+          { label: t('dashboard.kpi.income'), val: totalPaid, isCurrency: true, icon: <FiArrowUpRight />, colorClass: 'text-green-400', glowClass: 'glow-hover-green' },
+          { label: t('dashboard.kpi.expenses'), val: totalExpenses, isCurrency: true, icon: <FiActivity />, colorClass: 'text-amber-400', glowClass: 'glow-hover-amber' },
+          { label: t('dashboard.kpi.agency'), val: agencyReserve, isCurrency: true, icon: <FiCpu />, colorClass: 'text-purple-400', glowClass: 'glow-hover-purple' }
         ].map((s, i) => (
-          <div key={i} className="glass-card p-4 flex items-center gap-4">
-            <div className="text-cyan-400 opacity-50">{s.icon}</div>
+          <div key={i} className={`p-4 flex items-center gap-4 glass-card rounded-2xl transition-all cursor-default ${s.glowClass}`}>
+            <div className={`${s.colorClass} opacity-50`}>{s.icon}</div>
             <div>
               <p className="text-[9px] uppercase opacity-40 tracking-widest">{s.label}</p>
               <p className="text-lg font-bold font-outfit">
@@ -285,9 +303,9 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6 relative z-10 text-left">
         
         {/* Gráfico de Flujo de Ingresos */}
-        <div className="lg:col-span-8 glass-card p-6 min-h-[300px] flex flex-col">
+        <div className="lg:col-span-8 glass-card rounded-2xl p-6 min-h-[300px] flex flex-col transition-all glow-hover-cyan">
           <h2 className="text-[10px] uppercase tracking-[0.3em] text-cyan-400 mb-6 flex items-center gap-2">
-            <FiActivity className="animate-pulse" /> Flujo de Ingresos Netos
+            <FiActivity className="animate-pulse" /> {t('dashboard.chart.incomeFlow')}
           </h2>
           <div className="flex-1 w-full min-h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -310,10 +328,10 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
         </div>
 
         {/* Gráfico Circular Dividido */}
-        <div className="lg:col-span-4 glass-card p-6 flex flex-col justify-between min-h-[300px]">
+        <div className="lg:col-span-4 glass-card rounded-2xl p-6 flex flex-col justify-between min-h-[300px] transition-all glow-hover-purple">
            <div>
-              <p className="text-[10px] uppercase tracking-widest opacity-40 mb-1">Beneficio Personal (70%)</p>
-              <h3 className="text-3xl font-black font-outfit text-white mb-4">
+              <p className="text-[10px] uppercase tracking-widest opacity-40 mb-1 transition-colors">{t('dashboard.chart.personalBenefit')}</p>
+              <h3 className="text-3xl font-black font-outfit text-white mb-4 transition-colors">
                 {currency}{personalSalary.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
               </h3>
            </div>
@@ -341,49 +359,47 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
 
            <div className="mt-4 space-y-2">
               <div className="flex justify-between text-[10px]">
-                 <span className="flex items-center gap-2 font-bold"><div className="w-2 h-2 rounded-full bg-cyan-400"></div> Salario</span>
+                 <span className="flex items-center gap-2 font-bold"><div className="w-2 h-2 rounded-full bg-cyan-400"></div> {t('dashboard.chart.salary')}</span>
                  <span className="opacity-60">{currency}{personalSalary.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
               </div>
               <div className="flex justify-between text-[10px]">
-                 <span className="flex items-center gap-2 font-bold"><div className="w-2 h-2 rounded-full bg-purple-500"></div> Agencia</span>
+                 <span className="flex items-center gap-2 font-bold"><div className="w-2 h-2 rounded-full bg-purple-500"></div> {t('dashboard.chart.agencyLabel')}</span>
                  <span className="opacity-60">{currency}{agencyReserve.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
               </div>
            </div>
         </div>
 
-        {/* Consola de Logs (Terminal viva) */}
-        <div className="lg:col-span-8 bg-[#030507] border border-white/10 rounded-2xl p-6 min-h-[250px] font-mono flex flex-col shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] relative overflow-hidden group">
+        {/* Consola de Logs */}
+        <div className="lg:col-span-8 bg-[#030507] border border-white/10 rounded-2xl p-6 min-h-[250px] font-mono flex flex-col shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] relative overflow-hidden group transition-all glow-hover-green">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-green-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
           <h2 className="text-[10px] uppercase tracking-[0.3em] text-green-400 mb-5 flex items-center gap-2 font-space">
-            <TerminalIcon size={14} /> Terminal de Automatizaciones
+            <TerminalIcon size={14} /> {t('dashboard.terminal.title')}
           </h2>
           <div className="flex-1 overflow-y-auto space-y-3 text-xs pr-2 custom-scrollbar">
-            {realLogs.length > 0 ? realLogs.map((log, i) => (
-              <div key={i} className="flex gap-3 hover:bg-white/[0.02] p-1 rounded transition-colors">
+            {terminalLogs.map((log, i) => (
+              <div key={i} className="flex gap-3 hover:bg-white/[0.02] p-1 rounded transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <span className="text-white/30 shrink-0">[{log.time}]</span>
                 <span className={`${log.color} font-bold shrink-0`}>{log.type}:</span>
                 <span className="text-white/70">{log.msg}</span>
               </div>
-            )) : (
-              <div className="text-white/30 italic">Aún no hay operaciones registradas.</div>
-            )}
+            ))}
             <div className="flex gap-3 mt-4 items-center">
               <span className="text-green-500/80 font-bold">NEXUS_SYS &gt;</span>
-              <span className="w-2 h-4 bg-green-500 animate-pulse"></span>
+              <span className="w-2 h-4 bg-green-500 animate-[pulse_1s_ease-in-out_infinite]"></span>
             </div>
           </div>
         </div>
 
-        {/* Task Board Crítico e Interactivo */}
-        <div className="lg:col-span-4 glass-card p-6 min-h-[250px] flex flex-col">
+        {/* Task Board */}
+        <div className="lg:col-span-4 glass-card rounded-2xl p-6 min-h-[250px] flex flex-col transition-all glow-hover-purple">
           <h2 className="text-[10px] uppercase tracking-[0.3em] text-purple-400 mb-4 flex items-center gap-2 font-space">
-            <CheckSquare size={14} /> NEXUS_TASKS
+            <CheckSquare size={14} /> {t('dashboard.tasks.title')}
           </h2>
           
           <div className="mb-4 relative">
             <input 
               type="text" 
-              placeholder="Nueva tarea (Enter para guardar)..."
+              placeholder={t('dashboard.tasks.placeholder')}
               value={newTaskText}
               onChange={e => setNewTaskText(e.target.value)}
               onKeyDown={handleAddTask}
@@ -412,16 +428,16 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
                 </span>
               </div>
             )) : (
-              <div className="text-[10px] text-white/30 text-center py-4">Directorio de tareas vacío.</div>
+              <div className="text-[10px] text-white/30 text-center py-4">{t('dashboard.tasks.empty')}</div>
             )}
           </div>
         </div>
 
-        {/* NEXUS_ECOSYSTEM: Enlaces Operativos Unificados */}
-        <div className="lg:col-span-12 glass-card p-6 border-l-2 border-l-primary-container/50 relative mt-2">
+        {/* Enlaces Operativos */}
+        <div className="lg:col-span-12 glass-card rounded-2xl p-6 border-l-2 border-l-primary-container/50 relative mt-2 transition-all glow-hover-cyan">
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-[10px] uppercase tracking-[0.3em] text-primary-container flex items-center gap-2">
-              <ExternalLink size={14} /> ENLACES OPERATIVOS
+              <ExternalLink size={14} /> {t('dashboard.links.title')}
             </h3>
             <button 
               onClick={() => setIsManagingLinks(!isManagingLinks)}
@@ -433,12 +449,10 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
             </button>
           </div>
 
-          {/* Formulario con selector de tipo */}
           {isManagingLinks && (
             <div className="mb-5 p-4 bg-white/[0.02] border border-primary-container/20 rounded-xl animate-in fade-in slide-in-from-top-2">
-              <h4 className="text-[9px] text-primary-container font-space uppercase tracking-widest mb-3">Añadir Nuevo Enlace</h4>
+              <h4 className="text-[9px] text-primary-container font-space uppercase tracking-widest mb-3">{t('dashboard.links.addTitle')}</h4>
               
-              {/* Selector de Plataforma */}
               <div className="flex gap-2 mb-3">
                 <button 
                   onClick={() => setNewLink({ ...newLink, icon: 'github' })}
@@ -465,15 +479,15 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
               <div className="space-y-3 mb-3">
                 <input 
                   type="text" 
-                  placeholder={newLink.icon === 'github' ? 'Título (Ej. Repo Frontend E-commerce)' : 'Título (Ej. DRIVE CLIENTES)'}
-                  className="w-full bg-[#05070a] border border-white/10 rounded-md px-3 py-2 text-xs text-white outline-none focus:border-primary-container/50"
+                  placeholder={newLink.icon === 'github' ? t('dashboard.links.titlePlaceholderGithub') : t('dashboard.links.titlePlaceholderDrive')}
+                  className="w-full bg-[#05070a] border-white/10 rounded-md px-3 py-2 text-xs text-white outline-none focus:border-primary-container/50 border"
                   value={newLink.title}
                   onChange={e => setNewLink({ ...newLink, title: e.target.value })}
                 />
                 <input 
                   type="text" 
-                  placeholder={newLink.icon === 'github' ? 'https://github.com/user/repo' : 'https://drive.google.com/...'}
-                  className="w-full bg-[#05070a] border border-white/10 rounded-md px-3 py-2 text-xs text-white outline-none focus:border-primary-container/50 font-mono"
+                  placeholder={newLink.icon === 'github' ? t('dashboard.links.urlPlaceholderGithub') : t('dashboard.links.urlPlaceholderDrive')}
+                  className="w-full bg-[#05070a] border-white/10 rounded-md px-3 py-2 text-xs text-white outline-none focus:border-primary-container/50 font-mono border"
                   value={newLink.url}
                   onChange={e => setNewLink({ ...newLink, url: e.target.value })}
                 />
@@ -483,20 +497,19 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
                   onClick={() => { setIsManagingLinks(false); setNewLink({ title: '', url: '', icon: 'drive' }); }}
                   className="py-1.5 px-4 rounded-md border border-white/10 text-white/50 text-[9px] uppercase font-space tracking-widest hover:bg-white/5 hover:text-white transition-all"
                 >
-                  Cancelar
+                  {t('dashboard.links.cancel')}
                 </button>
                 <button 
                   onClick={handleAddLink}
                   disabled={!newLink.title || !newLink.url || isLinkLoading}
                   className="py-1.5 px-4 rounded-md bg-primary-container/20 text-primary-container font-bold text-[9px] uppercase font-space tracking-widest hover:bg-primary-container hover:text-on-primary transition-all disabled:opacity-50"
                 >
-                  {isLinkLoading ? 'Guardando...' : 'Guardar Enlace'}
+                  {isLinkLoading ? t('dashboard.links.saving') : t('dashboard.links.save')}
                 </button>
               </div>
             </div>
           )}
 
-          {/* Grilla Unificada de Todos los Enlaces */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {opLinks.length > 0 ? opLinks.map(link => {
               const colors = getLinkColor(link.icon);
@@ -523,10 +536,10 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
               );
             }) : (
               <div className="col-span-full text-[10px] text-white/30 text-center py-6 border border-dashed border-white/10 rounded-xl">
-                No hay enlaces operativos configurados.
+                {t('dashboard.links.empty')}
                 <br />
                 <button onClick={() => setIsManagingLinks(true)} className="mt-2 text-primary-container hover:underline font-bold">
-                  [+] Configurar Primer Enlace
+                  {t('dashboard.links.addFirst')}
                 </button>
               </div>
             )}
@@ -535,16 +548,16 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
       </div>
 
       {/* ---------------- ADVISORY BANNER ---------------- */}
-      <div className="glass-card border-l-4 border-l-cyan-500 p-6 bg-cyan-500/5 relative overflow-hidden z-10 text-left">
+      <div className="glass-card border-l-4 border-l-cyan-500 p-6 bg-cyan-500/5 relative overflow-hidden z-10 text-left transition-all rounded-2xl glow-hover-cyan">
         <div className="flex items-center gap-4 relative z-10">
           <div className="p-2 bg-cyan-500/20 rounded-lg text-cyan-400">
             <FiCpu size={20} />
           </div>
           <div>
-            <h2 className="text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-400 font-space mb-1">Nexus_Operational__Advisory</h2>
-            <p className="text-sm font-outfit text-white/80">
-              Salario mensual disponible: <span className="text-cyan-400 font-bold">{currency}{personalSalary.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>. 
-              {personalSalary > 1000 ? " Margen de liquidez saludable para distribución." : " Atención: Flujo de caja actual reducido. Monitorea cobranzas."}
+            <h2 className="text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-400 font-space mb-1">{t('dashboard.advisory.title')}</h2>
+            <p className="text-sm font-outfit text-white/80 transition-colors">
+              {t('dashboard.advisory.salaryAvailable')} <span className="text-cyan-400 font-bold">{currency}{personalSalary.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>. 
+              {personalSalary > 1000 ? ` ${t('dashboard.advisory.healthyMargin')}` : ` ${t('dashboard.advisory.lowCash')}`}
             </p>
           </div>
         </div>

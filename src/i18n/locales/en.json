@@ -1,0 +1,132 @@
+{
+  "dashboard": {
+    "title": "Nexus_Dashboard",
+    "subtitle": "Active Operational Module",
+    "kpi": {
+      "projects": "Active Projects",
+      "income": "Historical Revenue",
+      "expenses": "Executed Expenses",
+      "agency": "Agency Cash"
+    },
+    "chart": {
+      "incomeFlow": "Net Income Flow",
+      "personalBenefit": "Personal Benefit (70%)",
+      "salary": "Salary",
+      "agencyLabel": "Agency"
+    },
+    "terminal": {
+      "title": "Automation Terminal",
+      "noLogs": "No operations recorded yet.",
+      "invoice": "Invoice",
+      "record": "Record",
+      "by": "for",
+      "sysLog": "Supabase database sync complete."
+    },
+    "tasks": {
+      "title": "NEXUS_TASKS",
+      "placeholder": "New task (Enter to save)...",
+      "empty": "Task directory is empty."
+    },
+    "links": {
+      "title": "OPERATIONAL LINKS",
+      "addTitle": "Add New Link",
+      "cancel": "Cancel",
+      "save": "Save Link",
+      "saving": "Saving...",
+      "empty": "No operational links configured.",
+      "addFirst": "[+] Configure First Link",
+      "titlePlaceholderGithub": "Title (e.g. E-commerce Frontend Repo)",
+      "titlePlaceholderDrive": "Title (e.g. CLIENT DRIVE)",
+      "urlPlaceholderGithub": "https://github.com/user/repo",
+      "urlPlaceholderDrive": "https://drive.google.com/..."
+    },
+    "advisory": {
+      "title": "Nexus_Operational__Advisory",
+      "salaryAvailable": "Monthly salary available:",
+      "healthyMargin": "Healthy liquidity margin for distribution.",
+      "lowCash": "Warning: Current cash flow is reduced. Monitor collections."
+    },
+    "months": {
+      "jan": "Jan", "feb": "Feb", "mar": "Mar", "apr": "Apr",
+      "may": "May", "jun": "Jun", "jul": "Jul", "aug": "Aug",
+      "sep": "Sep", "oct": "Oct", "nov": "Nov", "dec": "Dec"
+    }
+  },
+  "profile": {
+    "header": {
+      "operatorIdentity": "Operator Identity",
+      "title": "OPERATOR PROFILE",
+      "status": "Status: Fully Operational"
+    },
+    "bio": {
+      "editProfile": "Edit Profile",
+      "email": "Email",
+      "phone": "Phone",
+      "notConfigured": "Not configured",
+      "activeProjects": "Active Projects",
+      "active": "ACTIVE",
+      "logout": "Log Out"
+    },
+    "security": {
+      "title": "Security Protocols",
+      "lastAccess": "Last Access",
+      "encryption": "Encryption"
+    },
+    "tabs": {
+      "wallets": "Wallets & Payments",
+      "networks": "Networks & Protocols"
+    },
+    "wallets": {
+      "title": "Payment Directory",
+      "addCredential": "Add Credential",
+      "newCredential": "New Payment Credential",
+      "namePlaceholder": "Name (e.g. PayPal)",
+      "typePlaceholder": "Type (e.g. USD, USDT)",
+      "valuePlaceholder": "Value (Account, Alias, Wallet)",
+      "cancel": "Cancel",
+      "save": "Save",
+      "empty": "No linked accounts",
+      "emptyDesc": "Add operational credentials (banks, wallets, crypto) for quick clipboard access.",
+      "addFirst": "[+] ADD PAYMENT CREDENTIAL",
+      "copyToClipboard": "Copy to clipboard",
+      "deleteCredential": "Delete credential"
+    },
+    "networks": {
+      "title": "Digital Profiles",
+      "configure": "Configure Networks",
+      "notConfigured": "Not configured",
+      "copyLink": "Copy full link"
+    },
+    "modal": {
+      "title": "Modify Operator Profile",
+      "uploadImage": "Upload New Image",
+      "baseInfo": "Base Information",
+      "fullName": "Full Name",
+      "specialization": "Specialization / Role",
+      "phoneNumber": "Phone Number",
+      "emailLogin": "Email Address (Login ID)",
+      "emailReadonly": "Email cannot be modified here.",
+      "neuralNetworks": "Neural Networks (Optional)",
+      "githubUser": "GitHub Username",
+      "linkedinUser": "LinkedIn Username",
+      "instagramUser": "Instagram Username",
+      "accessCredentials": "Access Credentials",
+      "newPassword": "New Password",
+      "newPasswordPlaceholder": "Leave empty to keep current",
+      "confirmCurrentPassword": "Confirm Current Password",
+      "confirmPasswordPlaceholder": "Only if changing password",
+      "cancel": "Cancel",
+      "confirm": "Confirm Protocol"
+    },
+    "copied": "Copied!"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "copied": "Copied!"
+  }
+}

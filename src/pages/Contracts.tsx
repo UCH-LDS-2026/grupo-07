@@ -326,43 +326,53 @@ export default function Contracts({ contracts, onRefresh, userId, projects = [] 
   };
 
   return (
-    <div className="p-8 space-y-8">
-      {/* Cabecera */}
-      <div className="flex justify-between items-center border-b border-white/5 pb-6">
-        <div>
-          <h2 className="text-white text-3xl font-outfit font-black tracking-tighter uppercase">Contratos</h2>
-          <p className="text-outline font-space text-sm mt-1">Gestión de contratos operativos</p>
+    <div className="p-8 min-h-screen bg-[#05070a] text-white font-space relative overflow-hidden transition-colors duration-500">
+      <div className="scanline-overlay pointer-events-none"></div>
+
+      <header className="mb-12 relative z-10">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-12 h-[1px] bg-primary-container/50"></div>
+          <span className="text-primary-container font-space text-[10px] font-bold uppercase tracking-widest">Legal System</span>
         </div>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => onRefresh()}
-            className="border border-white/10 text-white bg-white/[0.02] hover:bg-white/5 px-4 py-2.5 rounded-xl font-space font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2"
-          >
-            <span className="material-symbols-outlined text-sm">sync</span>
-            Sincronizar
-          </button>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="bg-cyan-500 text-black px-6 py-2.5 rounded-xl font-space font-bold text-xs uppercase tracking-widest hover:bg-cyan-400 transition-all flex items-center gap-2"
-          >
-            <span className="material-symbols-outlined text-sm">{showForm ? 'close' : 'add_box'}</span>
-            {showForm ? 'Cancelar' : 'Estructurar Contrato'}
-          </button>
+        <div className="flex justify-between items-end">
+          <div>
+            <h1 className="text-4xl font-outfit font-extrabold tracking-tighter text-white mb-2 transition-colors">Contratos Legales</h1>
+            <p className="text-outline text-[10px] tracking-[0.3em] uppercase transition-colors">Generación Automatizada</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => onRefresh()}
+              className="border border-white/10 text-white bg-white/[0.02] hover:bg-white/5 px-4 py-2.5 rounded-xl font-space font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-sm">sync</span>
+              Sincronizar
+            </button>
+            <button
+              onClick={() => setShowForm(!showForm)}
+              className="bg-cyan-500 text-black px-6 py-2.5 rounded-xl font-space font-bold text-xs uppercase tracking-widest hover:bg-cyan-400 transition-all flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-sm">{showForm ? 'close' : 'add_box'}</span>
+              {showForm ? 'Cancelar' : 'Estructurar Contrato'}
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
 
       {/* Formulario */}
       {showForm && (
-        <form onSubmit={handleCreateContract} className="border border-cyan-500/20 bg-cyan-500/[0.01] p-6 rounded-3xl space-y-4">
-          <h3 className="text-white font-space font-bold uppercase tracking-wider text-sm text-cyan-400">Estructurar nuevo documento de cobro (50/50)</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleCreateContract} className="glass-card p-8 mb-12 animate-in fade-in slide-in-from-top-4 rounded-2xl shadow-sm transition-colors">
+          <h2 className="text-[10px] uppercase tracking-[0.3em] text-cyan-400 mb-6 flex items-center gap-2">
+            <span className="material-symbols-outlined text-[14px]">edit_document</span> Nuevo Contrato Básico
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div className="space-y-1">
-              <label className="text-outline text-[11px] uppercase tracking-wider font-bold">Seleccionar Proyecto Base</label>
+              <label className="text-outline text-[11px] uppercase tracking-wider font-bold transition-colors">Seleccionar Proyecto Base</label>
               <select
                 required
                 value={selectedProjectId}
                 onChange={(e) => handleProjectChange(e.target.value)}
-                className="w-full bg-[#0a0f14] border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-space focus:outline-none focus:border-cyan-500"
+                className="w-full bg-[#0a0f14] border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-space focus:outline-none focus:border-cyan-500 transition-colors"
               >
                 <option value="">-- Elegir proyecto activo --</option>
                 {projects.map((p) => (
@@ -374,25 +384,25 @@ export default function Contracts({ contracts, onRefresh, userId, projects = [] 
             </div>
 
             <div className="space-y-1">
-              <label className="text-outline text-[11px] uppercase tracking-wider font-bold">Título Formal del Contrato</label>
+              <label className="text-outline text-[11px] uppercase tracking-wider font-bold transition-colors">Título del Documento</label>
               <input
                 type="text"
                 required
                 placeholder="Ej: Contrato de Servicios de Desarrollo Web"
                 value={contractTitle}
                 onChange={(e) => setContractTitle(e.target.value)}
-                className="w-full bg-[#0a0f14] border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-space focus:outline-none focus:border-cyan-500"
+                className="w-full bg-[#0a0f14] border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-space focus:outline-none focus:border-cyan-500 transition-colors"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-outline text-[11px] uppercase tracking-wider font-bold">Plazo de Entrega Final</label>
+              <label className="text-outline text-[11px] uppercase tracking-wider font-bold transition-colors">Plazo de Entrega Final</label>
               <input
                 type="date"
                 required
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full bg-[#0a0f14] border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-space focus:outline-none focus:border-cyan-500"
+                className="w-full bg-[#0a0f14] border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-space focus:outline-none focus:border-cyan-500 transition-colors"
               />
             </div>
           </div>
@@ -410,15 +420,15 @@ export default function Contracts({ contracts, onRefresh, userId, projects = [] 
       )}
 
       {/* Tabla */}
-      <section className="glass-card overflow-hidden relative z-10">
-        <div className="px-8 py-6 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
-          <h3 className="font-outfit text-xl text-white font-bold">Documentos Emitidos</h3>
+      <section className="glass-card overflow-hidden relative z-10 rounded-2xl shadow-sm transition-colors">
+        <div className="px-8 py-6 border-b border-white/5 flex justify-between items-center bg-white/[0.01] transition-colors">
+          <h3 className="font-outfit text-xl text-white font-bold transition-colors">Documentos Emitidos</h3>
           <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
-            <thead className="text-outline font-space text-[10px] uppercase tracking-widest bg-white/[0.02]">
+            <thead className="text-outline font-space text-[10px] uppercase tracking-widest bg-white/[0.02] border-b border-white/5 transition-colors">
               <tr>
                 <th className="px-8 py-5 font-medium">Documento / Proyecto</th>
                 <th className="px-8 py-5 font-medium">Presupuesto Total</th>

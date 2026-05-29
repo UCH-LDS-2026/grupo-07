@@ -70,7 +70,7 @@ export default function Projects({
   };
 
   return (
-    <main className="min-h-screen p-8 lg:p-12 relative overflow-hidden bg-[#05070a]">
+    <main className="min-h-screen p-8 lg:p-12 relative overflow-hidden bg-[#05070a] text-white transition-colors duration-500">
       <style>{`
         input::-webkit-outer-spin-button,
         input::-webkit-inner-spin-button {
@@ -86,7 +86,7 @@ export default function Projects({
       
       <header className="flex items-center justify-between mb-12 relative z-10 border-b border-white/5 pb-6">
         <div className="flex items-center gap-4">
-          <h2 className="font-outfit text-white text-xl font-black tracking-tighter">NEXUS SGE</h2>
+          <h2 className="font-outfit text-white text-xl font-black tracking-tighter transition-colors">NEXUS SGE</h2>
           <div className="w-[1px] h-4 bg-white/20"></div>
           <span className="text-primary-container font-space text-[10px] font-bold uppercase tracking-[0.3em]">Operational Terminal</span>
         </div>
@@ -97,7 +97,7 @@ export default function Projects({
             placeholder="BUSCAR PROYECTO..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-white/[0.03] border border-white/10 rounded-full pl-10 pr-4 py-2 text-white text-[10px] font-space uppercase tracking-widest placeholder:text-white/20 focus:border-primary-container/50 outline-none w-64 transition-all focus:w-80"
+            className="bg-white/[0.03] border border-white/10 rounded-full pl-10 pr-4 py-2 text-white text-[10px] font-space uppercase tracking-widest placeholder:text-white/20 focus:border-cyan-500/50 outline-none w-64 transition-all focus:w-80"
           />
         </div>
       </header>
@@ -107,8 +107,8 @@ export default function Projects({
           <div className="w-12 h-[1px] bg-primary-container/50"></div>
           <span className="text-primary-container font-space text-[10px] font-bold uppercase tracking-widest">Client & Project Assets</span>
         </div>
-        <h1 className="text-white font-outfit text-4xl font-extrabold tracking-tighter mb-2">GESTIÓN TERMINAL</h1>
-        <p className="text-outline font-space text-[10px] uppercase tracking-[0.2em]">Módulo Emma-Nexus [DB_SYNC_READY]</p>
+        <h1 className="text-white font-outfit text-4xl font-extrabold tracking-tighter mb-2 transition-colors">GESTIÓN TERMINAL</h1>
+        <p className="text-outline font-space text-[10px] uppercase tracking-[0.2em] transition-colors">Módulo Emma-Nexus [DB_SYNC_READY]</p>
       </section>
 
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20 relative z-10">
@@ -116,14 +116,14 @@ export default function Projects({
           <div 
             key={project.id} 
             onClick={() => handleOpenDetail(project)}
-            className="glass-card p-8 group border-white/5 hover:border-primary-container/30 cursor-pointer"
+            className="glass-card p-8 group border-white/5 hover:border-cyan-500/30 cursor-pointer rounded-2xl transition-colors shadow-sm"
           >
             <div className="flex justify-between items-start mb-6">
               <div>
                 <p className="text-primary-container font-space text-[9px] font-bold uppercase mb-1">
                   {project.client || 'Cliente Particular'}
                 </p>
-                <h3 className="text-white text-xl font-bold font-outfit mb-1">{project.title}</h3>
+                <h3 className="text-white text-xl font-bold font-outfit mb-1 transition-colors">{project.title}</h3>
               </div>
               <span className="material-symbols-outlined text-outline group-hover:text-primary-container transition-colors opacity-30 group-hover:opacity-100">
                 {project.icon || 'deployed_code'}
@@ -149,7 +149,7 @@ export default function Projects({
             </div>
 
             <div className="flex justify-between items-center pt-6 border-t border-white/5">
-              <p className="text-white font-bold font-outfit text-lg">{currency}{project.budget.toLocaleString()}</p>
+              <p className="text-white font-bold font-outfit text-lg transition-colors">{currency}{project.budget.toLocaleString()}</p>
               <span className="text-primary-container text-[10px] font-bold font-space group-hover:translate-x-1 transition-transform flex items-center gap-1">
                 DETALLES <span className="material-symbols-outlined text-xs">chevron_right</span>
               </span>
@@ -161,7 +161,7 @@ export default function Projects({
       {currentProject && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setSelectedProjectId(null)}></div>
-          <div className="w-full max-w-xl h-full bg-[#05070a] border-l border-white/10 relative z-10 p-12 overflow-y-auto custom-scrollbar">
+          <div className="w-full max-w-xl h-full bg-[#05070a] border-l border-white/10 relative z-10 p-12 overflow-y-auto custom-scrollbar transition-colors">
             <button onClick={() => setSelectedProjectId(null)} className="flex items-center gap-2 text-outline hover:text-primary-container transition-colors mb-12 font-space text-[10px] font-bold uppercase">
               <span className="material-symbols-outlined text-sm">arrow_back</span> VOLVER AL TERMINAL
             </button>
@@ -169,10 +169,10 @@ export default function Projects({
             <div className="space-y-12">
               <header>
                 <p className="text-primary-container font-space text-xs font-bold uppercase mb-2">CLIENTE: {currentProject.client || 'N/A'}</p>
-                <h2 className="text-white text-4xl font-black font-outfit">{currentProject.title}</h2>
+                <h2 className="text-white text-4xl font-black font-outfit transition-colors">{currentProject.title}</h2>
               </header>
 
-              <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5">
+              <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 transition-colors">
                 <h4 className="text-outline font-space text-[10px] font-bold uppercase mb-4">ESTADO_DEL_PROYECTO</h4>
                 <div className="flex gap-4">
                   {['ACTIVE', 'PAUSED', 'FINISHED'].map((status) => (
@@ -190,7 +190,7 @@ export default function Projects({
               </div>
 
               <div 
-                className="glass-card p-6 border-white/5 hover:border-primary-container/30 transition-all cursor-pointer group"
+                className="glass-card p-6 border-white/5 hover:border-cyan-500/30 transition-all cursor-pointer group rounded-2xl"
                 onClick={() => !isEditingProgress && setIsEditingProgress(true)}
               >
                 <p className="text-outline text-[9px] font-space uppercase mb-4 group-hover:text-primary-container">PROGRESO_OPERATIVO</p>
@@ -221,7 +221,7 @@ export default function Projects({
                   </div>
                 ) : (
                   <div className="flex items-center justify-between">
-                    <p className="text-white text-2xl font-bold font-outfit">{currentProject.progress}%</p>
+                    <p className="text-white text-2xl font-bold font-outfit transition-colors">{currentProject.progress}%</p>
                     <span className="material-symbols-outlined text-outline text-sm opacity-0 group-hover:opacity-100">edit</span>
                   </div>
                 )}

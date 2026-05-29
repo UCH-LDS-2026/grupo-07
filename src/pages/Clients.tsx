@@ -48,10 +48,10 @@ export default function Clients({
       {/* Header Section */}
       <header className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6 relative z-10">
         <div>
-          <h2 className="font-outfit text-white text-4xl md:text-5xl font-extrabold tracking-tighter neon-text">
+          <h2 className="font-outfit text-white text-4xl md:text-5xl font-extrabold tracking-tighter neon-text transition-colors">
             DIRECTORIO <span className="text-primary-container font-light">// RELACIONES</span>
           </h2>
-          <p className="text-outline font-space text-xs mt-2 tracking-[0.3em] uppercase">
+          <p className="text-outline font-space text-xs mt-2 tracking-[0.3em] uppercase transition-colors">
             Módulo de Gestión Estratégica de Clientes [NEXUS_DB]
           </p>
         </div>
@@ -59,7 +59,7 @@ export default function Clients({
         <div className="flex items-center gap-4">
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-primary-container text-on-primary px-6 py-2.5 rounded-xl font-space font-bold text-xs hover:brightness-110 active:scale-95 transition-all"
+            className="flex items-center gap-2 bg-primary-container text-on-primary px-6 py-2.5 rounded-xl font-space font-bold text-xs hover:brightness-110 active:scale-95 transition-all shadow-sm"
           >
             <span className="material-symbols-outlined text-sm">person_add</span>
             NUEVO CLIENTE
@@ -69,23 +69,23 @@ export default function Clients({
 
       {/* KPI Grid */}
       <section className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 relative z-10">
-        <div className="glass-card p-6 border-l-4 border-l-primary-container hover:bg-white/[0.03] transition-colors cursor-default">
+        <div className="border-white/5 glass-card p-6 border-l-4 border-l-primary-container hover:bg-white/[0.03] transition-colors cursor-default rounded-2xl shadow-sm">
           <div className="flex justify-between items-start mb-4">
-            <span className="text-outline font-space text-[10px] uppercase tracking-widest">Clientes Activos</span>
+            <span className="text-outline font-space text-[10px] uppercase tracking-widest transition-colors">Clientes Activos</span>
             <span className="material-symbols-outlined text-primary-container">person_check</span>
           </div>
-          <div className="text-3xl font-bold text-white font-outfit">
+          <div className="text-3xl font-bold text-white font-outfit transition-colors">
             {clients.filter(c => c.status === 'Active').length}
           </div>
           <div className="text-[10px] font-space text-primary-container mt-1 font-bold">ENTIDADES OPERATIVAS</div>
         </div>
 
-        <div className="glass-card p-6 border-l-4 border-l-outline hover:bg-white/[0.03] transition-colors cursor-default">
+        <div className="border-white/5 glass-card p-6 border-l-4 border-l-outline hover:bg-white/[0.03] transition-colors cursor-default rounded-2xl shadow-sm">
           <div className="flex justify-between items-start mb-4">
-            <span className="text-outline font-space text-[10px] uppercase tracking-widest">Clientes Inactivos</span>
+            <span className="text-outline font-space text-[10px] uppercase tracking-widest transition-colors">Clientes Inactivos</span>
             <span className="material-symbols-outlined text-outline">person_off</span>
           </div>
-          <div className="text-3xl font-bold text-white font-outfit">
+          <div className="text-3xl font-bold text-white font-outfit transition-colors">
             {clients.filter(c => c.status !== 'Active').length}
           </div>
           <div className="text-[10px] font-space text-outline mt-1 font-bold">FUERA DE TERMINAL</div>
@@ -93,15 +93,15 @@ export default function Clients({
       </section>
 
       {/* Directory Table */}
-      <section className="glass-card overflow-hidden relative z-10">
-        <div className="px-8 py-6 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
-          <h3 className="font-outfit text-xl text-white font-bold">Terminal de Datos de Clientes</h3>
+      <section className="glass-card overflow-hidden relative z-10 rounded-2xl shadow-sm transition-colors">
+        <div className="px-8 py-6 border-b border-white/5 flex justify-between items-center bg-white/[0.01] transition-colors">
+          <h3 className="font-outfit text-xl text-white font-bold transition-colors">Terminal de Datos de Clientes</h3>
           <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
-            <thead className="text-outline font-space text-[10px] uppercase tracking-widest bg-white/[0.02]">
+            <thead className="text-outline font-space text-[10px] uppercase tracking-widest bg-white/[0.02] border-b border-white/5 transition-colors">
               <tr>
                 <th className="px-8 py-5 font-medium">IDENTIDAD</th>
                 <th className="px-8 py-5 font-medium">COMPAÑÍA</th>
@@ -135,7 +135,7 @@ export default function Clients({
                     <td className="px-8 py-6">
                       <span className="text-primary-container font-space text-[11px] font-bold">{(client.projectsCount || 0)} PROYECTOS</span>
                     </td>
-                    <td className="px-8 py-6 text-white font-bold font-space text-sm">
+                    <td className="px-8 py-6 text-white font-bold font-space text-sm transition-colors">
                       {currency}{(client.billing || 0).toLocaleString()}
                     </td>
 
@@ -156,7 +156,7 @@ export default function Clients({
       </section>
 
       {/* Decorative Gradients */}
-      <div className="fixed top-0 left-0 w-full h-full -z-50 pointer-events-none overflow-hidden">
+      <div className="fixed top-0 left-0 w-full h-full -z-50 pointer-events-none overflow-hidden block">
         <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-primary-container/10 blur-[180px]"></div>
         <div className="absolute bottom-[-10%] left-[10%] w-[50%] h-[50%] rounded-full bg-secondary-container/5 blur-[150px]"></div>
       </div>

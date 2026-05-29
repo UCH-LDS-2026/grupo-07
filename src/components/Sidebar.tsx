@@ -1,3 +1,5 @@
+
+
 type Page = 'dashboard' | 'clients' | 'projects' | 'expenses' | 'profile' | 'billing' | 'contracts';
 
 interface SidebarProps {
@@ -21,15 +23,15 @@ export default function Sidebar({ activePage, onNavigate, onStartProject, curren
   ];
 
   return (
-    <aside className="h-screen w-64 fixed left-0 top-0 bg-[#05070a] border-r border-white/5 flex flex-col pt-12 pb-8 px-4 z-40 backdrop-blur-xl">
+    <aside className="h-screen w-64 fixed left-0 top-0 bg-[#05070a] border-r border-white/5 flex flex-col pt-12 pb-8 px-4 z-40 backdrop-blur-xl transition-colors duration-500">
       <div className="mb-12 px-4">
         <div className="flex items-center gap-2 mb-1">
-          <div className="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center transition-colors">
             <span className="material-symbols-outlined text-on-primary text-xl">hub</span>
           </div>
-          <h1 className="text-xl font-outfit font-black text-white tracking-tighter">NEXUSSGE</h1>
+          <h1 className="text-xl font-outfit font-black text-white tracking-tighter transition-colors">NEXUSSGE</h1>
         </div>
-        <p className="text-[10px] text-primary-container font-space font-bold uppercase tracking-[0.3em]">Operational OS</p>
+        <p className="text-[10px] text-primary-container font-space font-bold uppercase tracking-[0.3em] transition-colors">Operational OS</p>
       </div>
 
       <nav className="flex-1 space-y-1">
@@ -63,7 +65,7 @@ export default function Sidebar({ activePage, onNavigate, onStartProject, curren
         {/* Currency Switcher */}
         <div className="mb-6 px-2">
           <p className="text-[9px] text-outline font-space font-bold uppercase tracking-[0.2em] mb-3 ml-1">Divisa Operativa</p>
-          <div className="flex gap-2 p-1 bg-white/[0.03] border border-white/5 rounded-xl">
+          <div className="flex gap-2 p-1 bg-white/[0.03] border border-white/5 rounded-xl transition-colors">
             {['USD', 'ARS'].map((sym) => (
               <button
                 key={sym}
@@ -79,6 +81,7 @@ export default function Sidebar({ activePage, onNavigate, onStartProject, curren
             ))}
           </div>
         </div>
+
 
         <button 
           onClick={onStartProject}
@@ -96,7 +99,7 @@ export default function Sidebar({ activePage, onNavigate, onStartProject, curren
               {user?.avatar ? (
                 <img src={user.avatar} alt="Me" className="w-full h-full rounded-full object-cover" />
               ) : (
-                <div className="text-[10px] font-bold text-primary-container font-outfit">
+                <div className="text-[10px] font-bold text-primary-container font-outfit transition-colors">
                   {user?.name ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().substring(0, 2) : 'US'}
                 </div>
               )}
@@ -105,7 +108,7 @@ export default function Sidebar({ activePage, onNavigate, onStartProject, curren
           </div>
           <div className="overflow-hidden text-left">
             <p className="text-[11px] font-outfit font-bold text-white truncate uppercase tracking-tighter group-hover:text-primary-container transition-colors">{user?.name || 'Usuario'}</p>
-            <p className="text-[9px] text-primary-container font-space font-bold uppercase tracking-widest">{user?.role || 'Operador'}</p>
+            <p className="text-[9px] text-primary-container font-space font-bold uppercase tracking-widest transition-colors">{user?.role || 'Operador'}</p>
           </div>
         </button>
       </div>

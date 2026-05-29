@@ -182,15 +182,15 @@ export const Invoices = () => {
   });
 
   return (
-    <div className="p-8 space-y-8 min-h-screen text-white font-space">
+    <div className="p-8 space-y-8 min-h-screen bg-[#05070a] text-white font-space transition-colors duration-500">
       {/* Cabecera */}
       <div className="flex justify-between items-center border-b border-white/5 pb-6">
         <div>
-          <h2 className="text-white text-3xl font-outfit font-black tracking-tighter uppercase flex items-center gap-3">
+          <h2 className="text-white text-3xl font-outfit font-black tracking-tighter uppercase flex items-center gap-3 transition-colors">
             <FileText className="text-cyan-400" size={32} />
             Facturas
           </h2>
-          <p className="text-outline font-space text-[10px] uppercase tracking-[0.2em] mt-2">Gestión y control de pagos</p>
+          <p className="text-outline font-space text-[10px] uppercase tracking-[0.2em] mt-2 transition-colors">Gestión y control de pagos</p>
         </div>
         
         <div className="flex items-center gap-4">
@@ -206,10 +206,10 @@ export const Invoices = () => {
       </div>
 
       {/* Tabla Principal */}
-      <section className="glass-card overflow-hidden relative z-10 border border-white/5 rounded-2xl bg-white/[0.01]">
+      <section className="glass-card overflow-hidden relative z-10 border-white/5 rounded-2xl bg-white/[0.01] shadow-sm transition-colors">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
-            <thead className="text-outline font-space text-[10px] uppercase tracking-widest bg-white/[0.03] border-b border-white/5">
+            <thead className="text-outline font-space text-[10px] uppercase tracking-widest bg-white/[0.03] border-b border-white/5 transition-colors">
               <tr>
                 <th className="px-8 py-5 font-medium">Factura ID</th>
                 <th className="px-8 py-5 font-medium">Proyecto & Cliente</th>
@@ -245,7 +245,7 @@ export const Invoices = () => {
                   >
                     {/* ID de Factura */}
                     <td className="px-8 py-6">
-                      <span className="text-cyan-400 font-mono font-bold text-xs bg-cyan-400/10 px-2 py-1 rounded border border-cyan-400/20">
+                      <span className="font-mono font-bold text-xs rounded border transition-colors text-cyan-400 bg-cyan-400/10 border-cyan-400/20 px-2 py-1">
                         {invoice.invoice_number || `NEXUS-INV-${invoice.id}`}
                       </span>
                     </td>
@@ -264,7 +264,7 @@ export const Invoices = () => {
                     </td>
 
                     {/* Monto Total */}
-                    <td className="px-8 py-6 text-white font-bold font-space text-sm">
+                    <td className="px-8 py-6 text-white font-bold font-space text-sm transition-colors">
                       ${Number(invoice.amount).toLocaleString('es-AR')}
                     </td>
 
@@ -297,7 +297,7 @@ export const Invoices = () => {
                       <div className="flex justify-end gap-2">
                         <button 
                           onClick={() => handleExportPDF(invoice)}
-                          className="w-8 h-8 flex items-center justify-center bg-white/[0.02] border border-white/5 rounded-lg hover:border-cyan-500/30 text-outline hover:text-cyan-400 hover:bg-cyan-500/10 transition-all cursor-pointer"
+                          className="w-8 h-8 flex items-center justify-center border rounded-lg transition-all cursor-pointer bg-white/[0.02] border-white/5 hover:border-cyan-500/30 text-outline hover:text-cyan-400 hover:bg-cyan-500/10"
                           title="Descargar Factura PDF"
                         >
                           <Download size={14} />

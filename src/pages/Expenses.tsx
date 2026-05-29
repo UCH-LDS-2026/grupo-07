@@ -95,14 +95,14 @@ const Expenses = ({ expenses, currency, operatorId, onRefresh }: ExpensesProps) 
   };
 
   return (
-    <div className="p-8 min-h-screen bg-[#05070a] text-white font-space">
+    <div className="p-8 min-h-screen bg-[#05070a] text-white font-space transition-colors duration-500">
       {/* Header */}
       <div className="flex justify-between items-end mb-10">
         <div>
-          <h1 className="text-3xl font-bold tracking-tighter uppercase italic text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">
+          <h1 className="text-3xl font-bold tracking-tighter uppercase italic text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500 transition-colors">
             Nexus_Expenses
           </h1>
-          <p className="text-outline text-[10px] tracking-[0.3em] uppercase mt-1 opacity-50">
+          <p className="text-outline text-[10px] tracking-[0.3em] uppercase mt-1 opacity-50 transition-colors">
             Gestión de Flujo de Caja
           </p>
         </div>
@@ -115,12 +115,12 @@ const Expenses = ({ expenses, currency, operatorId, onRefresh }: ExpensesProps) 
               placeholder="BUSCAR GASTO..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-white/[0.03] border border-white/10 rounded-full pl-10 pr-4 py-2 text-white text-[10px] font-space uppercase tracking-widest placeholder:text-white/20 focus:border-primary-container/50 outline-none w-56 transition-all focus:w-72"
+              className="bg-white/[0.03] border border-white/10 rounded-full pl-10 pr-4 py-2 text-white text-[10px] font-space uppercase tracking-widest placeholder:text-white/20 focus:border-cyan-500/50 outline-none w-56 transition-all focus:w-72"
             />
           </div>
           <button 
             onClick={() => setIsAdding(!isAdding)}
-            className="flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full font-bold text-xs uppercase tracking-widest hover:bg-gray-200 transition-all"
+            className="flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full font-bold text-xs uppercase tracking-widest hover:bg-gray-200 transition-all shadow-sm"
           >
             {isAdding ? 'Cancelar' : <><FiPlus /> Nuevo Gasto</>}
           </button>
@@ -129,17 +129,17 @@ const Expenses = ({ expenses, currency, operatorId, onRefresh }: ExpensesProps) 
 
       {/* Formulario */}
       {isAdding && (
-        <div className="mb-10 bg-white/[0.03] border border-white/10 rounded-2xl p-6 animate-in fade-in slide-in-from-top-4">
+        <div className="mb-10 bg-white/[0.03] border border-white/10 rounded-2xl p-6 animate-in fade-in slide-in-from-top-4 shadow-sm transition-colors">
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
             <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest text-white/40 ml-2">Concepto</label>
+              <label className="text-[10px] uppercase tracking-widest text-white/40 ml-2 transition-colors">Concepto</label>
               <div className="relative">
                 <FiFileText className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" />
                 <input 
                   required
                   type="text"
                   placeholder="Ej: Pago Hosting"
-                  className="w-full bg-white/[0.05] border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm focus:border-white/30 outline-none"
+                  className="w-full bg-white/[0.05] border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm focus:border-white/30 outline-none transition-colors"
                   value={formData.description}
                   onChange={e => setFormData({...formData, description: e.target.value})}
                 />
@@ -147,14 +147,14 @@ const Expenses = ({ expenses, currency, operatorId, onRefresh }: ExpensesProps) 
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest text-white/40 ml-2">Monto ({currency})</label>
+              <label className="text-[10px] uppercase tracking-widest text-white/40 ml-2 transition-colors">Monto ({currency})</label>
               <div className="relative">
                 <FiDollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" />
                 <input 
                   required
                   type="number"
                   step="0.01"
-                  className="w-full bg-white/[0.05] border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm focus:border-white/30 outline-none"
+                  className="w-full bg-white/[0.05] border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm focus:border-white/30 outline-none transition-colors"
                   value={formData.amount}
                   onChange={e => setFormData({...formData, amount: e.target.value})}
                 />
@@ -162,11 +162,11 @@ const Expenses = ({ expenses, currency, operatorId, onRefresh }: ExpensesProps) 
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest text-white/40 ml-2">Categoría</label>
+              <label className="text-[10px] uppercase tracking-widest text-white/40 ml-2 transition-colors">Categoría</label>
               <div className="relative">
                 <FiTag className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" />
                 <select 
-                  className="w-full bg-white/[0.05] border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm focus:border-white/30 outline-none appearance-none cursor-pointer"
+                  className="w-full bg-white/[0.05] border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm focus:border-white/30 outline-none appearance-none cursor-pointer transition-colors"
                   value={formData.category}
                   onChange={e => setFormData({...formData, category: e.target.value})}
                 >
@@ -187,10 +187,10 @@ const Expenses = ({ expenses, currency, operatorId, onRefresh }: ExpensesProps) 
       )}
 
       {/* Tabla */}
-      <section className="glass-card overflow-hidden relative z-10">
+      <section className="glass-card overflow-hidden relative z-10 rounded-2xl shadow-sm transition-colors">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
-            <thead className="text-outline font-space text-[10px] uppercase tracking-widest bg-white/[0.02]">
+            <thead className="text-outline font-space text-[10px] uppercase tracking-widest bg-white/[0.02] border-b border-white/5 transition-colors">
               <tr>
                 <th className="px-8 py-5 font-medium">Fecha</th>
                 <th className="px-8 py-5 font-medium">Concepto</th>
