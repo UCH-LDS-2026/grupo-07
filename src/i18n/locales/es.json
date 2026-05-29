@@ -1,0 +1,132 @@
+{
+  "dashboard": {
+    "title": "Nexus_Dashboard",
+    "subtitle": "Módulo Operativo Activo",
+    "kpi": {
+      "projects": "Proyectos Activos",
+      "income": "Ingresos Históricos",
+      "expenses": "Gastos Ejecutados",
+      "agency": "Caja Agencia"
+    },
+    "chart": {
+      "incomeFlow": "Flujo de Ingresos Netos",
+      "personalBenefit": "Beneficio Personal (70%)",
+      "salary": "Salario",
+      "agencyLabel": "Agencia"
+    },
+    "terminal": {
+      "title": "Terminal de Automatizaciones",
+      "noLogs": "Aún no hay operaciones registradas.",
+      "invoice": "Factura",
+      "record": "Registro",
+      "by": "por",
+      "sysLog": "Sincronización con base de datos Supabase ok."
+    },
+    "tasks": {
+      "title": "NEXUS_TASKS",
+      "placeholder": "Nueva tarea (Enter para guardar)...",
+      "empty": "Directorio de tareas vacío."
+    },
+    "links": {
+      "title": "ENLACES OPERATIVOS",
+      "addTitle": "Añadir Nuevo Enlace",
+      "cancel": "Cancelar",
+      "save": "Guardar Enlace",
+      "saving": "Guardando...",
+      "empty": "No hay enlaces operativos configurados.",
+      "addFirst": "[+] Configurar Primer Enlace",
+      "titlePlaceholderGithub": "Título (Ej. Repo Frontend E-commerce)",
+      "titlePlaceholderDrive": "Título (Ej. DRIVE CLIENTES)",
+      "urlPlaceholderGithub": "https://github.com/user/repo",
+      "urlPlaceholderDrive": "https://drive.google.com/..."
+    },
+    "advisory": {
+      "title": "Nexus_Operational__Advisory",
+      "salaryAvailable": "Salario mensual disponible:",
+      "healthyMargin": "Margen de liquidez saludable para distribución.",
+      "lowCash": "Atención: Flujo de caja actual reducido. Monitorea cobranzas."
+    },
+    "months": {
+      "jan": "Ene", "feb": "Feb", "mar": "Mar", "apr": "Abr",
+      "may": "May", "jun": "Jun", "jul": "Jul", "aug": "Ago",
+      "sep": "Sep", "oct": "Oct", "nov": "Nov", "dec": "Dic"
+    }
+  },
+  "profile": {
+    "header": {
+      "operatorIdentity": "Operator Identity",
+      "title": "PERFIL DE OPERADOR",
+      "status": "Status: Totalmente Operativo"
+    },
+    "bio": {
+      "editProfile": "Editar Perfil",
+      "email": "Email",
+      "phone": "Teléfono",
+      "notConfigured": "No configurado",
+      "activeProjects": "Proyectos Activos",
+      "active": "ACTIVO",
+      "logout": "Cerrar Sesión"
+    },
+    "security": {
+      "title": "Protocolos de Seguridad",
+      "lastAccess": "Último Acceso",
+      "encryption": "Encriptación"
+    },
+    "tabs": {
+      "wallets": "Billeteras & Cobros",
+      "networks": "Redes & Protocolos"
+    },
+    "wallets": {
+      "title": "Directorio de Cobros",
+      "addCredential": "Añadir Credencial",
+      "newCredential": "Nueva Credencial de Cobro",
+      "namePlaceholder": "Nombre (Ej. Mercado Pago)",
+      "typePlaceholder": "Tipo (Ej. ARS, USDT)",
+      "valuePlaceholder": "Valor (CVU, Alias, Wallet)",
+      "cancel": "Cancelar",
+      "save": "Guardar",
+      "empty": "No hay cuentas vinculadas",
+      "emptyDesc": "Añade credenciales operativas (bancos, wallets, crypto) para tener acceso rápido en tu portapapeles.",
+      "addFirst": "[+] AÑADIR CREDENCIAL DE COBRO",
+      "copyToClipboard": "Copiar al portapapeles",
+      "deleteCredential": "Eliminar credencial"
+    },
+    "networks": {
+      "title": "Perfiles Digitales",
+      "configure": "Configurar Redes",
+      "notConfigured": "No configurado",
+      "copyLink": "Copiar enlace completo"
+    },
+    "modal": {
+      "title": "Modificar Perfil de Operador",
+      "uploadImage": "Cargar Nueva Imagen",
+      "baseInfo": "Información Base",
+      "fullName": "Nombre Completo",
+      "specialization": "Especialización / Rol",
+      "phoneNumber": "Número de Teléfono",
+      "emailLogin": "Correo Electrónico (Login ID)",
+      "emailReadonly": "El email no puede modificarse aquí.",
+      "neuralNetworks": "Redes Neurales (Opcional)",
+      "githubUser": "Usuario de GitHub",
+      "linkedinUser": "Usuario de LinkedIn",
+      "instagramUser": "Usuario de Instagram",
+      "accessCredentials": "Credenciales de Acceso",
+      "newPassword": "Nueva Contraseña",
+      "newPasswordPlaceholder": "Dejar vacío para no cambiar",
+      "confirmCurrentPassword": "Confirmar Contraseña Actual",
+      "confirmPasswordPlaceholder": "Solo si cambias contraseña",
+      "cancel": "Cancelar",
+      "confirm": "Confirmar Protocolo"
+    },
+    "copied": "¡Copiado!"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "copied": "¡Copiado!"
+  }
+}
