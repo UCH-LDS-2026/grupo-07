@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   FiActivity, FiCpu, FiArrowUpRight, FiLayers
@@ -10,11 +10,15 @@ import LanguageSelector from '../components/LanguageSelector';
 
 interface DashboardProps {
   currency?: string;
+  currencyCode?: string;
+  dolarRate?: number;
+  dolarLoading?: boolean;
+  dolarError?: string | null;
   projects?: any[];
   expenses?: any[];
 }
 
-export default function Dashboard({ currency = '$' }: DashboardProps) {
+export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dolarRate = 1, dolarLoading = false, dolarError = null }: DashboardProps) {
   const { t } = useTranslation();
 
   const [projectCount, setProjectCount] = useState(0);
@@ -66,7 +70,7 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
         
         let sumPaid = 0;
         const monthlyData = monthKeys.map(k => ({
-          name: t(`dashboard.months.${k}`),
+          monthKey: `dashboard.months.${k}`,
           ingresos: 0
         }));
 
@@ -104,9 +108,10 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
 
         const logsBase = [
           ...(recentInvoices || []).map(inv => ({
-            time: t('dashboard.terminal.invoice'),
+            timeKey: 'dashboard.terminal.invoice',
             type: inv.status === 'paid' ? 'SUCCESS' : 'PENDING',
-            msg: `${t('dashboard.terminal.record')} ${inv.invoice_number || 'N/A'} ${t('dashboard.terminal.by')} ${currency}${Number(inv.amount).toLocaleString('es-AR')}`,
+            invoiceNumber: inv.invoice_number,
+            amount: inv.amount,
             color: inv.status === 'paid' ? 'text-green-400' : 'text-amber-400'
           }))
         ];
@@ -122,16 +127,31 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
     };
 
     initFetch();
-  }, [currency, t]);
+  }, [currency]);
 
   useEffect(() => {
     if (realLogs.length === 0 && projectCount === 0) return; // Esperar data real
+    if (dolarLoading) return; // Esperar a que la cotización termine de cargar
 
-    const sequence = [
+    const baseSequence = [
       { time: 'SYS', type: 'INIT', msg: 'Iniciando módulo Emma-Nexus...', color: 'text-white/50', delay: 300 },
       { time: 'SYS', type: 'STATUS', msg: 'Sincronización con base de datos Supabase ok.', color: 'text-green-400', delay: 1000 },
       { time: 'SYS', type: 'AUTH', msg: 'Operador EMMANUEL BUSTOS en línea.', color: 'text-cyan-400', delay: 1800 },
-      ...realLogs.map((l, i) => ({ ...l, delay: 2500 + i * 400 }))
+    ];
+
+    if (dolarError) {
+      baseSequence.push({
+        time: 'SYS', type: 'NEXUS_WARNING', msg: 'Error de red en servidor de divisas. Utilizando cotización de contingencia interna ($1400).', color: 'text-amber-400', delay: 2300
+      });
+    } else {
+      baseSequence.push({
+        time: 'SYS', type: 'NEXUS_DIVISA', msg: `Enlace exitoso. Cotización Dólar Blue sincronizada en tiempo real: $${dolarRate}`, color: 'text-green-400', delay: 2300
+      });
+    }
+
+    const sequence = [
+      ...baseSequence,
+      ...realLogs.map((l, i) => ({ ...l, delay: 2800 + i * 400 }))
     ];
 
     setTerminalLogs([]);
@@ -143,7 +163,29 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
     );
 
     return () => timeouts.forEach(clearTimeout);
-  }, [realLogs, projectCount]);
+  }, [realLogs, projectCount, dolarLoading, dolarError, dolarRate]);
+
+  // LOG DE CONFIRMACIÓN DE IDIOMA EN TERMINAL
+  const { i18n } = useTranslation();
+  const [currentLang, setCurrentLang] = useState(i18n.language);
+
+  useEffect(() => {
+    if (i18n.language !== currentLang && terminalLogs.length > 0) {
+      setCurrentLang(i18n.language);
+      const langName = i18n.language === 'en' ? 'ENGLISH' : 'ESPAÑOL';
+      const msg = i18n.language === 'en' 
+        ? `Language core set to: ${langName}` 
+        : `Idioma configurado en: ${langName}`;
+
+      setTerminalLogs(prev => [
+        ...prev,
+        { time: 'SYS', type: 'NEXUS_SYSTEM', msg, color: 'text-blue-400' }
+      ]);
+    } else if (i18n.language !== currentLang) {
+      // Si la terminal no estaba lista, igual actualizamos el estado para no desfasarnos
+      setCurrentLang(i18n.language);
+    }
+  }, [i18n.language, currentLang, terminalLogs.length]);
 
   const fetchTasks = async (uid: string) => {
     const { data: tasksData, error } = await supabase
@@ -254,10 +296,26 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
     }
   };
 
-  // -- OPERACIONES EN TIEMPO REAL --
+  // -- CONVERSIÓN DINÁMICA EN TIEMPO REAL --
+  /** Convierte un valor USD a la divisa activa */
+  const cv = (usdValue: number) => {
+    if (currencyCode === 'ARS') return Math.round(usdValue * dolarRate);
+    return usdValue;
+  };
+
   const netProfit = totalPaid - totalExpenses;
   const personalSalary = netProfit > 0 ? netProfit * 0.7 : 0;
   const agencyReserve = netProfit > 0 ? netProfit * 0.3 : 0;
+
+  /** Datos del gráfico convertidos a la divisa activa */
+  const convertedLineData = useMemo(() => 
+    lineData.map(d => ({
+      ...d,
+      name: t(d.monthKey),
+      ingresos: currencyCode === 'ARS' ? Math.round(d.ingresos * dolarRate) : d.ingresos
+    })),
+    [lineData, currencyCode, dolarRate, t]
+  );
 
   const pieData = [
     { name: t('dashboard.chart.salary'), value: 70, color: '#00f0ff' },
@@ -283,16 +341,16 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 relative z-10 text-left">
         {[
           { label: t('dashboard.kpi.projects'), val: projectCount, isCurrency: false, icon: <FiLayers />, colorClass: 'text-cyan-400', glowClass: 'glow-hover-cyan' },
-          { label: t('dashboard.kpi.income'), val: totalPaid, isCurrency: true, icon: <FiArrowUpRight />, colorClass: 'text-green-400', glowClass: 'glow-hover-green' },
-          { label: t('dashboard.kpi.expenses'), val: totalExpenses, isCurrency: true, icon: <FiActivity />, colorClass: 'text-amber-400', glowClass: 'glow-hover-amber' },
-          { label: t('dashboard.kpi.agency'), val: agencyReserve, isCurrency: true, icon: <FiCpu />, colorClass: 'text-purple-400', glowClass: 'glow-hover-purple' }
+          { label: t('dashboard.kpi.income'), val: cv(totalPaid), isCurrency: true, icon: <FiArrowUpRight />, colorClass: 'text-green-400', glowClass: 'glow-hover-green' },
+          { label: t('dashboard.kpi.expenses'), val: cv(totalExpenses), isCurrency: true, icon: <FiActivity />, colorClass: 'text-amber-400', glowClass: 'glow-hover-amber' },
+          { label: t('dashboard.kpi.agency'), val: cv(agencyReserve), isCurrency: true, icon: <FiCpu />, colorClass: 'text-purple-400', glowClass: 'glow-hover-purple' }
         ].map((s, i) => (
           <div key={i} className={`p-4 flex items-center gap-4 glass-card rounded-2xl transition-all cursor-default ${s.glowClass}`}>
             <div className={`${s.colorClass} opacity-50`}>{s.icon}</div>
             <div>
               <p className="text-[9px] uppercase opacity-40 tracking-widest">{s.label}</p>
               <p className="text-lg font-bold font-outfit">
-                {s.isCurrency ? `${currency}${s.val.toLocaleString('es-AR', { maximumFractionDigits: 0 })}` : s.val}
+                {s.isCurrency ? `${currency} ${s.val.toLocaleString('es-AR', { maximumFractionDigits: 0 })}` : s.val}
               </p>
             </div>
           </div>
@@ -309,7 +367,7 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
           </h2>
           <div className="flex-1 w-full min-h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={lineData}>
+              <AreaChart data={convertedLineData}>
                 <defs>
                   <linearGradient id="colorIngresos" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#00f0ff" stopOpacity={0.3}/>
@@ -332,7 +390,7 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
            <div>
               <p className="text-[10px] uppercase tracking-widest opacity-40 mb-1 transition-colors">{t('dashboard.chart.personalBenefit')}</p>
               <h3 className="text-3xl font-black font-outfit text-white mb-4 transition-colors">
-                {currency}{personalSalary.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                {currency} {cv(personalSalary).toLocaleString('es-AR', { maximumFractionDigits: 0 })}
               </h3>
            </div>
 
@@ -360,11 +418,11 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
            <div className="mt-4 space-y-2">
               <div className="flex justify-between text-[10px]">
                  <span className="flex items-center gap-2 font-bold"><div className="w-2 h-2 rounded-full bg-cyan-400"></div> {t('dashboard.chart.salary')}</span>
-                 <span className="opacity-60">{currency}{personalSalary.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
+                 <span className="opacity-60">{currency} {cv(personalSalary).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
               </div>
               <div className="flex justify-between text-[10px]">
                  <span className="flex items-center gap-2 font-bold"><div className="w-2 h-2 rounded-full bg-purple-500"></div> {t('dashboard.chart.agencyLabel')}</span>
-                 <span className="opacity-60">{currency}{agencyReserve.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
+                 <span className="opacity-60">{currency} {cv(agencyReserve).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
               </div>
            </div>
         </div>
@@ -378,9 +436,11 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
           <div className="flex-1 overflow-y-auto space-y-3 text-xs pr-2 custom-scrollbar">
             {terminalLogs.map((log, i) => (
               <div key={i} className="flex gap-3 hover:bg-white/[0.02] p-1 rounded transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <span className="text-white/30 shrink-0">[{log.time}]</span>
+                <span className="text-white/30 shrink-0">[{log.time || t(log.timeKey)}]</span>
                 <span className={`${log.color} font-bold shrink-0`}>{log.type}:</span>
-                <span className="text-white/70">{log.msg}</span>
+                <span className="text-white/70">
+                  {log.msg || `${t('dashboard.terminal.record')} ${log.invoiceNumber || 'N/A'} ${t('dashboard.terminal.by')} ${currency} ${Number(log.amount).toLocaleString('es-AR')}`}
+                </span>
               </div>
             ))}
             <div className="flex gap-3 mt-4 items-center">
@@ -556,7 +616,7 @@ export default function Dashboard({ currency = '$' }: DashboardProps) {
           <div>
             <h2 className="text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-400 font-space mb-1">{t('dashboard.advisory.title')}</h2>
             <p className="text-sm font-outfit text-white/80 transition-colors">
-              {t('dashboard.advisory.salaryAvailable')} <span className="text-cyan-400 font-bold">{currency}{personalSalary.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>. 
+              {t('dashboard.advisory.salaryAvailable')} <span className="text-cyan-400 font-bold">{currency} {cv(personalSalary).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>. 
               {personalSalary > 1000 ? ` ${t('dashboard.advisory.healthyMargin')}` : ` ${t('dashboard.advisory.lowCash')}`}
             </p>
           </div>

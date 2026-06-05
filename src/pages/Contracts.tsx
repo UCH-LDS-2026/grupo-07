@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import SearchBar from '../components/SearchBar';
 
@@ -10,6 +11,7 @@ interface ContractsProps {
 }
 
 export default function Contracts({ contracts, onRefresh, userId, projects = [] }: ContractsProps) {
+  const { t } = useTranslation();
   const [isCreating, setIsCreating] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
@@ -166,7 +168,7 @@ export default function Contracts({ contracts, onRefresh, userId, projects = [] 
 
   // 3. FUNCIÓN PARA ELIMINAR CONTRATO
   const handleDeleteContract = async (contractId: number) => {
-    if (!confirm("¿Estás seguro de que querés rescindir y eliminar este contrato definitivamente?")) {
+    if (!confirm(t('contracts.confirmDelete'))) {
       return;
     }
 
@@ -332,12 +334,12 @@ export default function Contracts({ contracts, onRefresh, userId, projects = [] 
       <header className="mb-12 relative z-10">
         <div className="flex items-center gap-2 mb-2">
           <div className="w-12 h-[1px] bg-primary-container/50"></div>
-          <span className="text-primary-container font-space text-[10px] font-bold uppercase tracking-widest">Legal System</span>
+          <span className="text-primary-container font-space text-[10px] font-bold uppercase tracking-widest">{t('contracts.headerLabel')}</span>
         </div>
         <div className="flex justify-between items-end">
           <div>
-            <h1 className="text-4xl font-outfit font-extrabold tracking-tighter text-white mb-2 transition-colors">Contratos Legales</h1>
-            <p className="text-outline text-[10px] tracking-[0.3em] uppercase transition-colors">Generación Automatizada</p>
+            <h1 className="text-4xl font-outfit font-extrabold tracking-tighter text-white mb-2 transition-colors">{t('contracts.title')}</h1>
+            <p className="text-outline text-[10px] tracking-[0.3em] uppercase transition-colors">{t('contracts.subtitle')}</p>
           </div>
           <div className="flex items-center gap-4">
             <button
@@ -345,14 +347,14 @@ export default function Contracts({ contracts, onRefresh, userId, projects = [] 
               className="border border-white/10 text-white bg-white/[0.02] hover:bg-white/5 px-4 py-2.5 rounded-xl font-space font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2"
             >
               <span className="material-symbols-outlined text-sm">sync</span>
-              Sincronizar
+              {t('contracts.sync')}
             </button>
             <button
               onClick={() => setShowForm(!showForm)}
               className="bg-cyan-500 text-black px-6 py-2.5 rounded-xl font-space font-bold text-xs uppercase tracking-widest hover:bg-cyan-400 transition-all flex items-center gap-2"
             >
               <span className="material-symbols-outlined text-sm">{showForm ? 'close' : 'add_box'}</span>
-              {showForm ? 'Cancelar' : 'Estructurar Contrato'}
+              {showForm ? t('contracts.cancel') : t('contracts.structureContract')}
             </button>
           </div>
         </div>
@@ -362,19 +364,19 @@ export default function Contracts({ contracts, onRefresh, userId, projects = [] 
       {showForm && (
         <form onSubmit={handleCreateContract} className="glass-card p-8 mb-12 animate-in fade-in slide-in-from-top-4 rounded-2xl shadow-sm transition-colors">
           <h2 className="text-[10px] uppercase tracking-[0.3em] text-cyan-400 mb-6 flex items-center gap-2">
-            <span className="material-symbols-outlined text-[14px]">edit_document</span> Nuevo Contrato Básico
+            <span className="material-symbols-outlined text-[14px]">edit_document</span> {t('contracts.newContract')}
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div className="space-y-1">
-              <label className="text-outline text-[11px] uppercase tracking-wider font-bold transition-colors">Seleccionar Proyecto Base</label>
+              <label className="text-outline text-[11px] uppercase tracking-wider font-bold transition-colors">{t('contracts.selectProject')}</label>
               <select
                 required
                 value={selectedProjectId}
                 onChange={(e) => handleProjectChange(e.target.value)}
                 className="w-full bg-[#0a0f14] border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-space focus:outline-none focus:border-cyan-500 transition-colors"
               >
-                <option value="">-- Elegir proyecto activo --</option>
+                <option value="">{t('contracts.selectProjectPlaceholder')}</option>
                 {projects.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.title} ({p.client}) — Real: ${Number(p.budget).toLocaleString('es-AR')}
@@ -384,11 +386,11 @@ export default function Contracts({ contracts, onRefresh, userId, projects = [] 
             </div>
 
             <div className="space-y-1">
-              <label className="text-outline text-[11px] uppercase tracking-wider font-bold transition-colors">Título del Documento</label>
+              <label className="text-outline text-[11px] uppercase tracking-wider font-bold transition-colors">{t('contracts.documentTitle')}</label>
               <input
                 type="text"
                 required
-                placeholder="Ej: Contrato de Servicios de Desarrollo Web"
+                placeholder={t('contracts.documentTitlePlaceholder')}
                 value={contractTitle}
                 onChange={(e) => setContractTitle(e.target.value)}
                 className="w-full bg-[#0a0f14] border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-space focus:outline-none focus:border-cyan-500 transition-colors"
@@ -396,7 +398,7 @@ export default function Contracts({ contracts, onRefresh, userId, projects = [] 
             </div>
 
             <div className="space-y-1">
-              <label className="text-outline text-[11px] uppercase tracking-wider font-bold transition-colors">Plazo de Entrega Final</label>
+              <label className="text-outline text-[11px] uppercase tracking-wider font-bold transition-colors">{t('contracts.deliveryDeadline')}</label>
               <input
                 type="date"
                 required
@@ -413,7 +415,7 @@ export default function Contracts({ contracts, onRefresh, userId, projects = [] 
               disabled={isCreating || !selectedProjectId}
               className="bg-cyan-500 text-black font-space font-bold text-xs uppercase tracking-widest px-6 py-3 rounded-xl hover:bg-cyan-400 transition-all"
             >
-              {isCreating ? 'Guardando...' : 'Confirmar contrato'}
+              {isCreating ? t('contracts.saving') : t('contracts.confirmContract')}
             </button>
           </div>
         </form>
@@ -422,7 +424,7 @@ export default function Contracts({ contracts, onRefresh, userId, projects = [] 
       {/* Tabla */}
       <section className="glass-card overflow-hidden relative z-10 rounded-2xl shadow-sm transition-colors">
         <div className="px-8 py-6 border-b border-white/5 flex justify-between items-center bg-white/[0.01] transition-colors">
-          <h3 className="font-outfit text-xl text-white font-bold transition-colors">Documentos Emitidos</h3>
+          <h3 className="font-outfit text-xl text-white font-bold transition-colors">{t('contracts.issuedDocuments')}</h3>
           <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         </div>
 
@@ -430,17 +432,17 @@ export default function Contracts({ contracts, onRefresh, userId, projects = [] 
           <table className="w-full text-left border-collapse">
             <thead className="text-outline font-space text-[10px] uppercase tracking-widest bg-white/[0.02] border-b border-white/5 transition-colors">
               <tr>
-                <th className="px-8 py-5 font-medium">Documento / Proyecto</th>
-                <th className="px-8 py-5 font-medium">Presupuesto Total</th>
-                <th className="px-8 py-5 font-medium">Hitos de Cobro (50/50)</th>
-                <th className="px-8 py-5 font-medium text-right">Acción</th>
+                <th className="px-8 py-5 font-medium">{t('contracts.columns.document')}</th>
+                <th className="px-8 py-5 font-medium">{t('contracts.columns.totalBudget')}</th>
+                <th className="px-8 py-5 font-medium">{t('contracts.columns.milestones')}</th>
+                <th className="px-8 py-5 font-medium text-right">{t('contracts.columns.action')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5 font-space text-sm">
               {filteredContracts.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="px-8 py-20 text-center text-outline font-space text-[10px] uppercase tracking-[0.4em]">
-                    {searchTerm ? `No hay resultados para "${searchTerm}"` : "Sin contratos registrados"}
+                    {searchTerm ? `${t('contracts.noResults')} "${searchTerm}"` : t('contracts.noContracts')}
                   </td>
                 </tr>
               ) : (
@@ -468,8 +470,8 @@ export default function Contracts({ contracts, onRefresh, userId, projects = [] 
                         ${Number(contract.amount || 0).toLocaleString('es-AR')}
                       </td>
                       <td className="px-8 py-6 text-xs text-outline space-y-1">
-                        <div><span className="text-white font-medium">PAGO 1 (50% Inicial):</span> ${half.toLocaleString('es-AR')}</div>
-                        <div><span className="text-cyan-500 font-medium">PAGO 2 (50% Entrega):</span> ${half.toLocaleString('es-AR')}</div>
+                        <div><span className="text-white font-medium">{t('contracts.payment1')}:</span> ${half.toLocaleString('es-AR')}</div>
+                        <div><span className="text-cyan-500 font-medium">{t('contracts.payment2')}:</span> ${half.toLocaleString('es-AR')}</div>
                       </td>
                       <td className="px-8 py-6 text-right">
                         <div className="flex items-center justify-end gap-2">

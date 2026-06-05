@@ -1,4 +1,4 @@
-
+import { useTranslation } from 'react-i18next';
 
 type Page = 'dashboard' | 'clients' | 'projects' | 'expenses' | 'profile' | 'billing' | 'contracts';
 
@@ -9,17 +9,21 @@ interface SidebarProps {
   currency: string;
   onCurrencyChange: (currency: string) => void;
   user: { name: string, role: string, email: string, avatar?: string };
+  dolarRate?: number;
+  dolarLoading?: boolean;
+  dolarInfo?: { compra: number; venta: number; fechaActualizacion: string } | null;
 }
 
-export default function Sidebar({ activePage, onNavigate, onStartProject, currency, onCurrencyChange, user }: SidebarProps) {
+export default function Sidebar({ activePage, onNavigate, onStartProject, currency, onCurrencyChange, user, dolarRate, dolarLoading, dolarInfo }: SidebarProps) {
+  const { t } = useTranslation();
 
   const navItems: { id: Page; icon: string; label: string }[] = [
-    { id: 'dashboard', icon: 'dashboard', label: 'Command Center' },
-    { id: 'clients', icon: 'group', label: 'Directorio' },
-    { id: 'projects', icon: 'account_tree', label: 'Proyectos' },
-    { id: 'contracts', icon: 'description', label: 'Contratos' },
-    { id: 'billing', icon: 'receipt_long', label: 'Facturas' },
-    { id: 'expenses', icon: 'payments', label: 'Finanzas' },
+    { id: 'dashboard', icon: 'dashboard', label: t('sidebar.nav.dashboard') },
+    { id: 'clients', icon: 'group', label: t('sidebar.nav.clients') },
+    { id: 'projects', icon: 'account_tree', label: t('sidebar.nav.projects') },
+    { id: 'contracts', icon: 'description', label: t('sidebar.nav.contracts') },
+    { id: 'billing', icon: 'receipt_long', label: t('sidebar.nav.billing') },
+    { id: 'expenses', icon: 'payments', label: t('sidebar.nav.expenses') },
   ];
 
   return (
@@ -31,7 +35,7 @@ export default function Sidebar({ activePage, onNavigate, onStartProject, curren
           </div>
           <h1 className="text-xl font-outfit font-black text-white tracking-tighter transition-colors">NEXUSSGE</h1>
         </div>
-        <p className="text-[10px] text-primary-container font-space font-bold uppercase tracking-[0.3em] transition-colors">Operational OS</p>
+        <p className="text-[10px] text-primary-container font-space font-bold uppercase tracking-[0.3em] transition-colors">{t('sidebar.labels.operativeOs')}</p>
       </div>
 
       <nav className="flex-1 space-y-1">
@@ -64,7 +68,7 @@ export default function Sidebar({ activePage, onNavigate, onStartProject, curren
       <div className="mt-auto px-2">
         {/* Currency Switcher */}
         <div className="mb-6 px-2">
-          <p className="text-[9px] text-outline font-space font-bold uppercase tracking-[0.2em] mb-3 ml-1">Divisa Operativa</p>
+          <p className="text-[9px] text-outline font-space font-bold uppercase tracking-[0.2em] mb-3 ml-1">{t('sidebar.labels.operativeCurrency')}</p>
           <div className="flex gap-2 p-1 bg-white/[0.03] border border-white/5 rounded-xl transition-colors">
             {['USD', 'ARS'].map((sym) => (
               <button
@@ -80,6 +84,36 @@ export default function Sidebar({ activePage, onNavigate, onStartProject, curren
               </button>
             ))}
           </div>
+          
+          {/* Live Dolar Rate Indicator */}
+          <div className="mt-3 py-2 px-3 bg-white/[0.02] border border-white/5 rounded-xl transition-all">
+            {dolarLoading ? (
+              <div className="flex items-center justify-center gap-2 py-3">
+                <div className="w-3 h-3 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-[9px] text-white/40 font-space uppercase tracking-widest">Sincronizando...</span>
+              </div>
+            ) : dolarInfo ? (
+              <div className="flex flex-col">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[8px] text-white/40 font-space uppercase tracking-widest flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse"></span>
+                    MERCADO BLUE
+                  </span>
+                </div>
+                
+                {/* TEXTO PRINCIPAL GIGANTE */}
+                <div className="text-3xl font-extrabold font-mono tracking-wider text-emerald-400 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)] w-full text-center my-1">
+                  ${dolarRate?.toLocaleString('es-AR')}
+                </div>
+                
+                {/* DETALLES COMPRA/VENTA (Ajustados con mayor tamaño y nitidez) */}
+                <div className="flex justify-between items-center text-[11px] font-bold uppercase font-mono tracking-wider text-white/60 mt-1">
+                  <span>COMPRA: ${dolarInfo.compra.toLocaleString('es-AR')}</span>
+                  <span>VENTA: ${dolarInfo.venta.toLocaleString('es-AR')}</span>
+                </div>
+              </div>
+            ) : null}
+          </div>
         </div>
 
 
@@ -87,7 +121,7 @@ export default function Sidebar({ activePage, onNavigate, onStartProject, curren
           onClick={onStartProject}
           className="w-full py-3 bg-gradient-to-r from-primary-container to-secondary-container text-on-primary font-space font-bold text-[10px] uppercase tracking-widest rounded-xl hover:brightness-110 active:scale-95 transition-all mb-8 shadow-lg shadow-primary-container/10"
         >
-          + Iniciar Proyecto
+          {t('sidebar.labels.startProject')}
         </button>
 
         <button 

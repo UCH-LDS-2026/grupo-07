@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   FiPlus,
   FiTrash2,
@@ -22,6 +23,7 @@ interface ExpensesProps {
 }
 
 const Expenses = ({ expenses, currency, operatorId, onRefresh }: ExpensesProps) => {
+  const { t } = useTranslation();
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -100,10 +102,10 @@ const Expenses = ({ expenses, currency, operatorId, onRefresh }: ExpensesProps) 
       <div className="flex justify-between items-end mb-10">
         <div>
           <h1 className="text-3xl font-bold tracking-tighter uppercase italic text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500 transition-colors">
-            Nexus_Expenses
+            {t('expenses.title')}
           </h1>
           <p className="text-outline text-[10px] tracking-[0.3em] uppercase mt-1 opacity-50 transition-colors">
-            Gestión de Flujo de Caja
+            {t('expenses.subtitle')}
           </p>
         </div>
         
@@ -112,7 +114,7 @@ const Expenses = ({ expenses, currency, operatorId, onRefresh }: ExpensesProps) 
             <span className="material-symbols-outlined absolute left-3 text-white/30 text-sm">search</span>
             <input
               type="text"
-              placeholder="BUSCAR GASTO..."
+              placeholder={t('expenses.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="bg-white/[0.03] border border-white/10 rounded-full pl-10 pr-4 py-2 text-white text-[10px] font-space uppercase tracking-widest placeholder:text-white/20 focus:border-cyan-500/50 outline-none w-56 transition-all focus:w-72"
@@ -122,7 +124,7 @@ const Expenses = ({ expenses, currency, operatorId, onRefresh }: ExpensesProps) 
             onClick={() => setIsAdding(!isAdding)}
             className="flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full font-bold text-xs uppercase tracking-widest hover:bg-gray-200 transition-all shadow-sm"
           >
-            {isAdding ? 'Cancelar' : <><FiPlus /> Nuevo Gasto</>}
+            {isAdding ? t('expenses.cancel') : <><FiPlus /> {t('expenses.newExpense')}</>}
           </button>
         </div>
       </div>
@@ -132,13 +134,13 @@ const Expenses = ({ expenses, currency, operatorId, onRefresh }: ExpensesProps) 
         <div className="mb-10 bg-white/[0.03] border border-white/10 rounded-2xl p-6 animate-in fade-in slide-in-from-top-4 shadow-sm transition-colors">
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
             <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest text-white/40 ml-2 transition-colors">Concepto</label>
+              <label className="text-[10px] uppercase tracking-widest text-white/40 ml-2 transition-colors">{t('expenses.form.concept')}</label>
               <div className="relative">
                 <FiFileText className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" />
                 <input 
                   required
                   type="text"
-                  placeholder="Ej: Pago Hosting"
+                  placeholder={t('expenses.form.conceptPlaceholder')}
                   className="w-full bg-white/[0.05] border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm focus:border-white/30 outline-none transition-colors"
                   value={formData.description}
                   onChange={e => setFormData({...formData, description: e.target.value})}
@@ -147,7 +149,7 @@ const Expenses = ({ expenses, currency, operatorId, onRefresh }: ExpensesProps) 
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest text-white/40 ml-2 transition-colors">Monto ({currency})</label>
+              <label className="text-[10px] uppercase tracking-widest text-white/40 ml-2 transition-colors">{t('expenses.form.amount')} ({currency})</label>
               <div className="relative">
                 <FiDollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" />
                 <input 
@@ -162,7 +164,7 @@ const Expenses = ({ expenses, currency, operatorId, onRefresh }: ExpensesProps) 
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest text-white/40 ml-2 transition-colors">Categoría</label>
+              <label className="text-[10px] uppercase tracking-widest text-white/40 ml-2 transition-colors">{t('expenses.form.category')}</label>
               <div className="relative">
                 <FiTag className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" />
                 <select 
@@ -180,7 +182,7 @@ const Expenses = ({ expenses, currency, operatorId, onRefresh }: ExpensesProps) 
               disabled={loading}
               className="bg-blue-500 hover:bg-blue-600 text-white rounded-xl py-2 font-bold text-xs uppercase tracking-widest disabled:opacity-50 transition-all shadow-lg shadow-blue-500/20"
             >
-              {loading ? '...' : 'Confirmar'}
+              {loading ? '...' : t('expenses.confirm')}
             </button>
           </form>
         </div>
@@ -192,11 +194,11 @@ const Expenses = ({ expenses, currency, operatorId, onRefresh }: ExpensesProps) 
           <table className="w-full text-left border-collapse">
             <thead className="text-outline font-space text-[10px] uppercase tracking-widest bg-white/[0.02] border-b border-white/5 transition-colors">
               <tr>
-                <th className="px-8 py-5 font-medium">Fecha</th>
-                <th className="px-8 py-5 font-medium">Concepto</th>
-                <th className="px-8 py-5 font-medium">Categoría</th>
-                <th className="px-8 py-5 font-medium">Monto</th>
-                <th className="px-8 py-5 font-medium text-right">Acciones</th>
+                <th className="px-8 py-5 font-medium">{t('expenses.columns.date')}</th>
+                <th className="px-8 py-5 font-medium">{t('expenses.columns.concept')}</th>
+                <th className="px-8 py-5 font-medium">{t('expenses.columns.category')}</th>
+                <th className="px-8 py-5 font-medium">{t('expenses.columns.amount')}</th>
+                <th className="px-8 py-5 font-medium text-right">{t('expenses.columns.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5 font-space text-sm">
