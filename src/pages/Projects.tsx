@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Project } from '../lib/types';
 import { supabase } from '../lib/supabase';
 import CreateProjectModal from '../components/CreateProjectModal';
@@ -20,6 +21,7 @@ export default function Projects({
   onDelete,
   fetchProjects
 }: ProjectsProps) {
+  const { t } = useTranslation();
 
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [isEditingProgress, setIsEditingProgress] = useState(false);
@@ -88,13 +90,13 @@ export default function Projects({
         <div className="flex items-center gap-4">
           <h2 className="font-outfit text-white text-xl font-black tracking-tighter transition-colors">NEXUS SGE</h2>
           <div className="w-[1px] h-4 bg-white/20"></div>
-          <span className="text-primary-container font-space text-[10px] font-bold uppercase tracking-[0.3em]">Operational Terminal</span>
+          <span className="text-primary-container font-space text-[10px] font-bold uppercase tracking-[0.3em]">{t('projects.headerLabel')}</span>
         </div>
         <div className="relative flex items-center">
           <span className="material-symbols-outlined absolute left-3 text-white/30 text-sm">search</span>
           <input
             type="text"
-            placeholder="BUSCAR PROYECTO..."
+            placeholder={t('projects.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="bg-white/[0.03] border border-white/10 rounded-full pl-10 pr-4 py-2 text-white text-[10px] font-space uppercase tracking-widest placeholder:text-white/20 focus:border-cyan-500/50 outline-none w-64 transition-all focus:w-80"
@@ -105,10 +107,10 @@ export default function Projects({
       <section className="mb-12 relative z-10">
         <div className="flex items-center gap-2 mb-2">
           <div className="w-12 h-[1px] bg-primary-container/50"></div>
-          <span className="text-primary-container font-space text-[10px] font-bold uppercase tracking-widest">Client & Project Assets</span>
+          <span className="text-primary-container font-space text-[10px] font-bold uppercase tracking-widest">{t('projects.sectionLabel')}</span>
         </div>
-        <h1 className="text-white font-outfit text-4xl font-extrabold tracking-tighter mb-2 transition-colors">GESTIÓN TERMINAL</h1>
-        <p className="text-outline font-space text-[10px] uppercase tracking-[0.2em] transition-colors">Módulo Emma-Nexus [DB_SYNC_READY]</p>
+        <h1 className="text-white font-outfit text-4xl font-extrabold tracking-tighter mb-2 transition-colors">{t('projects.title')}</h1>
+        <p className="text-outline font-space text-[10px] uppercase tracking-[0.2em] transition-colors">{t('projects.subtitle')}</p>
       </section>
 
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20 relative z-10">
@@ -121,7 +123,7 @@ export default function Projects({
             <div className="flex justify-between items-start mb-6">
               <div>
                 <p className="text-primary-container font-space text-[9px] font-bold uppercase mb-1">
-                  {project.client || 'Cliente Particular'}
+                  {project.client || t('projects.privateClient')}
                 </p>
                 <h3 className="text-white text-xl font-bold font-outfit mb-1 transition-colors">{project.title}</h3>
               </div>
@@ -151,7 +153,7 @@ export default function Projects({
             <div className="flex justify-between items-center pt-6 border-t border-white/5">
               <p className="text-white font-bold font-outfit text-lg transition-colors">{currency}{project.budget.toLocaleString()}</p>
               <span className="text-primary-container text-[10px] font-bold font-space group-hover:translate-x-1 transition-transform flex items-center gap-1">
-                DETALLES <span className="material-symbols-outlined text-xs">chevron_right</span>
+                {t('projects.details')} <span className="material-symbols-outlined text-xs">chevron_right</span>
               </span>
             </div>
           </div>
@@ -163,17 +165,17 @@ export default function Projects({
           <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setSelectedProjectId(null)}></div>
           <div className="w-full max-w-xl h-full bg-[#05070a] border-l border-white/10 relative z-10 p-12 overflow-y-auto custom-scrollbar transition-colors">
             <button onClick={() => setSelectedProjectId(null)} className="flex items-center gap-2 text-outline hover:text-primary-container transition-colors mb-12 font-space text-[10px] font-bold uppercase">
-              <span className="material-symbols-outlined text-sm">arrow_back</span> VOLVER AL TERMINAL
+              <span className="material-symbols-outlined text-sm">arrow_back</span> {t('projects.backToTerminal')}
             </button>
 
             <div className="space-y-12">
               <header>
-                <p className="text-primary-container font-space text-xs font-bold uppercase mb-2">CLIENTE: {currentProject.client || 'N/A'}</p>
+                <p className="text-primary-container font-space text-xs font-bold uppercase mb-2">{t('projects.clientLabel')}: {currentProject.client || 'N/A'}</p>
                 <h2 className="text-white text-4xl font-black font-outfit transition-colors">{currentProject.title}</h2>
               </header>
 
               <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 transition-colors">
-                <h4 className="text-outline font-space text-[10px] font-bold uppercase mb-4">ESTADO_DEL_PROYECTO</h4>
+                <h4 className="text-outline font-space text-[10px] font-bold uppercase mb-4">{t('projects.projectStatus')}</h4>
                 <div className="flex gap-4">
                   {['ACTIVE', 'PAUSED', 'FINISHED'].map((status) => (
                     <button
@@ -193,7 +195,7 @@ export default function Projects({
                 className="glass-card p-6 border-white/5 hover:border-cyan-500/30 transition-all cursor-pointer group rounded-2xl"
                 onClick={() => !isEditingProgress && setIsEditingProgress(true)}
               >
-                <p className="text-outline text-[9px] font-space uppercase mb-4 group-hover:text-primary-container">PROGRESO_OPERATIVO</p>
+                <p className="text-outline text-[9px] font-space uppercase mb-4 group-hover:text-primary-container">{t('projects.operativeProgress')}</p>
                 {isEditingProgress ? (
                   <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
                     <div className="relative flex items-center">
@@ -216,7 +218,7 @@ export default function Projects({
                       className="flex items-center justify-center bg-primary-container text-black rounded-lg h-[42px] px-4 hover:brightness-110 active:scale-95 transition-all"
                     >
                       <span className="material-symbols-outlined text-sm font-bold">done_all</span>
-                      <span className="font-space text-[10px] font-black ml-2">LISTO</span>
+                      <span className="font-space text-[10px] font-black ml-2">{t('projects.done')}</span>
                     </button>
                   </div>
                 ) : (
@@ -229,14 +231,14 @@ export default function Projects({
 
               <button 
                 onClick={() => {
-                  if (confirm(`¿Eliminar definitivamente "${currentProject.title}"?`)) {
+                  if (confirm(`${t('projects.confirmDelete')} "${currentProject.title}"?`)) {
                     onDelete(currentProject.id);
                     setSelectedProjectId(null);
                   }
                 }}
                 className="w-full py-4 rounded-xl border border-red-500/30 bg-red-500/5 text-red-500 font-space font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-red-500 hover:text-white transition-all"
               >
-                ELIMINAR ACTIVO Y REGISTROS ASOCIADOS
+                {t('projects.deleteAsset')}
               </button>
             </div>
           </div>

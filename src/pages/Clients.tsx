@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import CreateClientModal from '../components/CreateClientModal';
 import ClientDetailModal from '../components/ClientDetailModal';
 import SearchBar from '../components/SearchBar';
@@ -21,6 +22,7 @@ export default function Clients({
   userId,
   onRefresh
 }: ClientsProps) {
+  const { t } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -49,10 +51,10 @@ export default function Clients({
       <header className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6 relative z-10">
         <div>
           <h2 className="font-outfit text-white text-4xl md:text-5xl font-extrabold tracking-tighter neon-text transition-colors">
-            DIRECTORIO <span className="text-primary-container font-light">// RELACIONES</span>
+            {t('clients.title').split('//')[0]} <span className="text-primary-container font-light">//{t('clients.title').split('//')[1]}</span>
           </h2>
           <p className="text-outline font-space text-xs mt-2 tracking-[0.3em] uppercase transition-colors">
-            Módulo de Gestión Estratégica de Clientes [NEXUS_DB]
+            {t('clients.subtitle')}
           </p>
         </div>
         
@@ -62,7 +64,7 @@ export default function Clients({
             className="flex items-center gap-2 bg-primary-container text-on-primary px-6 py-2.5 rounded-xl font-space font-bold text-xs hover:brightness-110 active:scale-95 transition-all shadow-sm"
           >
             <span className="material-symbols-outlined text-sm">person_add</span>
-            NUEVO CLIENTE
+            {t('clients.newClient')}
           </button>
         </div>
       </header>
@@ -71,31 +73,31 @@ export default function Clients({
       <section className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 relative z-10">
         <div className="border-white/5 glass-card p-6 border-l-4 border-l-primary-container hover:bg-white/[0.03] transition-colors cursor-default rounded-2xl shadow-sm">
           <div className="flex justify-between items-start mb-4">
-            <span className="text-outline font-space text-[10px] uppercase tracking-widest transition-colors">Clientes Activos</span>
+            <span className="text-outline font-space text-[10px] uppercase tracking-widest transition-colors">{t('clients.kpis.activeClients')}</span>
             <span className="material-symbols-outlined text-primary-container">person_check</span>
           </div>
           <div className="text-3xl font-bold text-white font-outfit transition-colors">
             {clients.filter(c => c.status === 'Active').length}
           </div>
-          <div className="text-[10px] font-space text-primary-container mt-1 font-bold">ENTIDADES OPERATIVAS</div>
+          <div className="text-[10px] font-space text-primary-container mt-1 font-bold">{t('clients.kpis.operativeEntities')}</div>
         </div>
 
         <div className="border-white/5 glass-card p-6 border-l-4 border-l-outline hover:bg-white/[0.03] transition-colors cursor-default rounded-2xl shadow-sm">
           <div className="flex justify-between items-start mb-4">
-            <span className="text-outline font-space text-[10px] uppercase tracking-widest transition-colors">Clientes Inactivos</span>
+            <span className="text-outline font-space text-[10px] uppercase tracking-widest transition-colors">{t('clients.kpis.inactiveClients')}</span>
             <span className="material-symbols-outlined text-outline">person_off</span>
           </div>
           <div className="text-3xl font-bold text-white font-outfit transition-colors">
             {clients.filter(c => c.status !== 'Active').length}
           </div>
-          <div className="text-[10px] font-space text-outline mt-1 font-bold">FUERA DE TERMINAL</div>
+          <div className="text-[10px] font-space text-outline mt-1 font-bold">{t('clients.kpis.offlineEntities')}</div>
         </div>
       </section>
 
       {/* Directory Table */}
       <section className="glass-card overflow-hidden relative z-10 rounded-2xl shadow-sm transition-colors">
         <div className="px-8 py-6 border-b border-white/5 flex justify-between items-center bg-white/[0.01] transition-colors">
-          <h3 className="font-outfit text-xl text-white font-bold transition-colors">Terminal de Datos de Clientes</h3>
+          <h3 className="font-outfit text-xl text-white font-bold transition-colors">{t('clients.terminal')}</h3>
           <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         </div>
 
@@ -103,11 +105,11 @@ export default function Clients({
           <table className="w-full text-left border-collapse">
             <thead className="text-outline font-space text-[10px] uppercase tracking-widest bg-white/[0.02] border-b border-white/5 transition-colors">
               <tr>
-                <th className="px-8 py-5 font-medium">IDENTIDAD</th>
-                <th className="px-8 py-5 font-medium">COMPAÑÍA</th>
-                <th className="px-8 py-5 font-medium">PROYECTOS_ACTIVOS</th>
-                <th className="px-8 py-5 font-medium">FACTURACIÓN</th>
-                <th className="px-8 py-5 font-medium">ESTADO</th>
+                <th className="px-8 py-5 font-medium">{t('clients.columns.identity')}</th>
+                <th className="px-8 py-5 font-medium">{t('clients.columns.company')}</th>
+                <th className="px-8 py-5 font-medium">{t('clients.columns.activeProjects')}</th>
+                <th className="px-8 py-5 font-medium">{t('clients.columns.billing')}</th>
+                <th className="px-8 py-5 font-medium">{t('clients.columns.status')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">

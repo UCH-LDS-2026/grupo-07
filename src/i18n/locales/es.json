@@ -1,4 +1,19 @@
 {
+  "sidebar": {
+    "nav": {
+      "dashboard": "Panel",
+      "clients": "Directorio",
+      "projects": "Proyectos",
+      "contracts": "Contratos",
+      "billing": "Facturas",
+      "expenses": "Finanzas"
+    },
+    "labels": {
+      "operativeCurrency": "DIVISA OPERATIVA",
+      "startProject": "+ INICIAR PROYECTO",
+      "operativeOs": "SO OPERATIVO"
+    }
+  },
   "dashboard": {
     "title": "Nexus_Dashboard",
     "subtitle": "Módulo Operativo Activo",
@@ -23,7 +38,7 @@
       "sysLog": "Sincronización con base de datos Supabase ok."
     },
     "tasks": {
-      "title": "NEXUS_TASKS",
+      "title": "NEXUS_TAREAS",
       "placeholder": "Nueva tarea (Enter para guardar)...",
       "empty": "Directorio de tareas vacío."
     },
@@ -50,6 +65,112 @@
       "jan": "Ene", "feb": "Feb", "mar": "Mar", "apr": "Abr",
       "may": "May", "jun": "Jun", "jul": "Jul", "aug": "Ago",
       "sep": "Sep", "oct": "Oct", "nov": "Nov", "dec": "Dic"
+    }
+  },
+  "clients": {
+    "title": "DIRECTORIO // RELACIONES",
+    "subtitle": "Módulo de Gestión Estratégica de Clientes [NEXUS_DB]",
+    "newClient": "NUEVO CLIENTE",
+    "terminal": "Terminal de Datos de Clientes",
+    "kpis": {
+      "activeClients": "Clientes Activos",
+      "operativeEntities": "ENTIDADES OPERATIVAS",
+      "inactiveClients": "Clientes Inactivos",
+      "offlineEntities": "FUERA DE TERMINAL"
+    },
+    "columns": {
+      "identity": "IDENTIDAD",
+      "company": "COMPAÑÍA",
+      "activeProjects": "PROYECTOS_ACTIVOS",
+      "billing": "FACTURACIÓN",
+      "status": "ESTADO"
+    },
+    "noResults": "No hay resultados para",
+    "noEntities": "Sin entidades registradas"
+  },
+  "projects": {
+    "title": "GESTIÓN TERMINAL",
+    "subtitle": "Módulo Emma-Nexus [DB_SYNC_READY]",
+    "headerLabel": "Operational Terminal",
+    "sectionLabel": "Client & Project Assets",
+    "searchPlaceholder": "BUSCAR PROYECTO...",
+    "details": "DETALLES",
+    "privateClient": "Cliente Particular",
+    "backToTerminal": "VOLVER AL TERMINAL",
+    "clientLabel": "CLIENTE",
+    "projectStatus": "ESTADO_DEL_PROYECTO",
+    "operativeProgress": "PROGRESO_OPERATIVO",
+    "done": "LISTO",
+    "deleteAsset": "ELIMINAR ACTIVO Y REGISTROS ASOCIADOS",
+    "confirmDelete": "¿Eliminar definitivamente"
+  },
+  "contracts": {
+    "title": "Contratos Legales",
+    "subtitle": "Generación Automatizada",
+    "headerLabel": "Legal System",
+    "sync": "Sincronizar",
+    "structureContract": "Estructurar Contrato",
+    "cancel": "Cancelar",
+    "newContract": "Nuevo Contrato Básico",
+    "selectProject": "Seleccionar Proyecto Base",
+    "selectProjectPlaceholder": "-- Elegir proyecto activo --",
+    "documentTitle": "Título del Documento",
+    "documentTitlePlaceholder": "Ej: Contrato de Servicios de Desarrollo Web",
+    "deliveryDeadline": "Plazo de Entrega Final",
+    "saving": "Guardando...",
+    "confirmContract": "Confirmar contrato",
+    "issuedDocuments": "Documentos Emitidos",
+    "noResults": "No hay resultados para",
+    "noContracts": "Sin contratos registrados",
+    "columns": {
+      "document": "Documento / Proyecto",
+      "totalBudget": "Presupuesto Total",
+      "milestones": "Hitos de Cobro (50/50)",
+      "action": "Acción"
+    },
+    "payment1": "PAGO 1 (50% Inicial)",
+    "payment2": "PAGO 2 (50% Entrega)",
+    "confirmDelete": "¿Estás seguro de que querés rescindir y eliminar este contrato definitivamente?"
+  },
+  "invoices": {
+    "title": "Facturas",
+    "subtitle": "Gestión y control de pagos",
+    "sync": "Sincronizar",
+    "loading": "Sincronizando Base de Datos...",
+    "empty": "No hay facturas registradas en el sistema.",
+    "confirmDelete": "¿Confirmar eliminación permanente de esta factura? Esta acción no se puede deshacer.",
+    "columns": {
+      "invoiceId": "Factura ID",
+      "projectClient": "Proyecto & Cliente",
+      "amount": "Monto (Con IVA)",
+      "status": "Estado",
+      "actions": "Acciones"
+    },
+    "status": {
+      "paid": "Pagado",
+      "pending": "Pendiente",
+      "overdue": "Vencido"
+    }
+  },
+  "expenses": {
+    "title": "Nexus_Expenses",
+    "subtitle": "Gestión de Flujo de Caja",
+    "searchPlaceholder": "BUSCAR GASTO...",
+    "newExpense": "Nuevo Gasto",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "form": {
+      "concept": "Concepto",
+      "conceptPlaceholder": "Ej: Pago Hosting",
+      "amount": "Monto",
+      "category": "Categoría"
+    },
+    "columns": {
+      "date": "Fecha",
+      "concept": "Concepto",
+      "category": "Categoría",
+      "amount": "Monto",
+      "actions": "Acciones"
     }
   },
   "profile": {
@@ -127,6 +248,7 @@
     "cancel": "Cancelar",
     "save": "Guardar",
     "delete": "Eliminar",
-    "copied": "¡Copiado!"
+    "copied": "¡Copiado!",
+    "searchEntity": "BUSCAR ENTIDAD..."
   }
 }

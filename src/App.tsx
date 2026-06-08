@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useDolar } from './hooks/useDolar';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Clients from './pages/Clients';
@@ -195,15 +196,11 @@ function App() {
     setClients(derivedClients);
   };
 
+  // Cotización dólar blue en tiempo real
+  const { rate: dolarRate, cotizacion: dolarInfo, loading: dolarLoading, error: dolarError } = useDolar();
+
   const handleCurrencyChange = (newCurrency: string) => {
     if (newCurrency === currency) return;
-    const rate = 1400;
-    const multiplier = newCurrency === 'ARS' ? rate : 1 / rate;
-    setProjects(prev => prev.map(p => ({
-      ...p,
-      budget: Math.round(p.budget * multiplier),
-      paid: Math.round(p.paid * multiplier)
-    })));
     setCurrency(newCurrency);
   };
 
@@ -219,7 +216,13 @@ function App() {
       </div>
     );
 
-    const commonProps = { currency: currency === 'USD' ? '$' : 'ARS$ ' };
+    const commonProps = { 
+      currency: currency === 'USD' ? 'US$' : 'ARS$',
+      currencyCode: currency,
+      dolarRate,
+      dolarError,
+      dolarLoading,
+    };
 
     switch (activePage) {
       case 'dashboard':
@@ -299,6 +302,9 @@ function App() {
         currency={currency}
         onCurrencyChange={handleCurrencyChange}
         user={currentUser}
+        dolarRate={dolarRate}
+        dolarLoading={dolarLoading}
+        dolarInfo={dolarInfo}
       />
 
       <main className="flex-1 w-full transition-all duration-300 md:ml-64 pl-4 md:pl-12 max-w-[1500px]">

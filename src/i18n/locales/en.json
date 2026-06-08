@@ -1,4 +1,19 @@
 {
+  "sidebar": {
+    "nav": {
+      "dashboard": "Command Center",
+      "clients": "Directory",
+      "projects": "Projects",
+      "contracts": "Contracts",
+      "billing": "Invoices",
+      "expenses": "Finances"
+    },
+    "labels": {
+      "operativeCurrency": "OPERATIVE CURRENCY",
+      "startProject": "+ START PROJECT",
+      "operativeOs": "OPERATIONAL OS"
+    }
+  },
   "dashboard": {
     "title": "Nexus_Dashboard",
     "subtitle": "Active Operational Module",
@@ -50,6 +65,112 @@
       "jan": "Jan", "feb": "Feb", "mar": "Mar", "apr": "Apr",
       "may": "May", "jun": "Jun", "jul": "Jul", "aug": "Aug",
       "sep": "Sep", "oct": "Oct", "nov": "Nov", "dec": "Dec"
+    }
+  },
+  "clients": {
+    "title": "DIRECTORY // RELATIONS",
+    "subtitle": "Strategic Client Management Module [NEXUS_DB]",
+    "newClient": "NEW CLIENT",
+    "terminal": "Client Data Terminal",
+    "kpis": {
+      "activeClients": "Active Clients",
+      "operativeEntities": "OPERATIVE ENTITIES",
+      "inactiveClients": "Inactive Clients",
+      "offlineEntities": "OFFLINE FROM TERMINAL"
+    },
+    "columns": {
+      "identity": "IDENTITY",
+      "company": "COMPANY",
+      "activeProjects": "ACTIVE_PROJECTS",
+      "billing": "BILLING",
+      "status": "STATUS"
+    },
+    "noResults": "No results for",
+    "noEntities": "No registered entities"
+  },
+  "projects": {
+    "title": "TERMINAL MANAGEMENT",
+    "subtitle": "Emma-Nexus Module [DB_SYNC_READY]",
+    "headerLabel": "Operational Terminal",
+    "sectionLabel": "Client & Project Assets",
+    "searchPlaceholder": "SEARCH PROJECT...",
+    "details": "DETAILS",
+    "privateClient": "Private Client",
+    "backToTerminal": "BACK TO TERMINAL",
+    "clientLabel": "CLIENT",
+    "projectStatus": "PROJECT_STATUS",
+    "operativeProgress": "OPERATIVE_PROGRESS",
+    "done": "DONE",
+    "deleteAsset": "DELETE ASSET AND ASSOCIATED RECORDS",
+    "confirmDelete": "Permanently delete"
+  },
+  "contracts": {
+    "title": "Legal Contracts",
+    "subtitle": "Automated Generation",
+    "headerLabel": "Legal System",
+    "sync": "Sync",
+    "structureContract": "Structure Contract",
+    "cancel": "Cancel",
+    "newContract": "New Basic Contract",
+    "selectProject": "Select Base Project",
+    "selectProjectPlaceholder": "-- Choose active project --",
+    "documentTitle": "Document Title",
+    "documentTitlePlaceholder": "E.g.: Software Development Services Contract",
+    "deliveryDeadline": "Final Delivery Deadline",
+    "saving": "Saving...",
+    "confirmContract": "Confirm contract",
+    "issuedDocuments": "Issued Documents",
+    "noResults": "No results for",
+    "noContracts": "No contracts registered",
+    "columns": {
+      "document": "Document / Project",
+      "totalBudget": "Total Budget",
+      "milestones": "Billing Milestones (50/50)",
+      "action": "Action"
+    },
+    "payment1": "PAYMENT 1 (50% Upfront)",
+    "payment2": "PAYMENT 2 (50% Delivery)",
+    "confirmDelete": "Are you sure you want to terminate and permanently delete this contract?"
+  },
+  "invoices": {
+    "title": "Invoices",
+    "subtitle": "Payment management and control",
+    "sync": "Sync",
+    "loading": "Syncing Database...",
+    "empty": "No invoices registered in the system.",
+    "confirmDelete": "Confirm permanent deletion of this invoice? This action cannot be undone.",
+    "columns": {
+      "invoiceId": "Invoice ID",
+      "projectClient": "Project & Client",
+      "amount": "Amount (w/ Tax)",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "paid": "Paid",
+      "pending": "Pending",
+      "overdue": "Overdue"
+    }
+  },
+  "expenses": {
+    "title": "Nexus_Expenses",
+    "subtitle": "Cash Flow Management",
+    "searchPlaceholder": "SEARCH EXPENSE...",
+    "newExpense": "New Expense",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "form": {
+      "concept": "Concept",
+      "conceptPlaceholder": "E.g.: Hosting Payment",
+      "amount": "Amount",
+      "category": "Category"
+    },
+    "columns": {
+      "date": "Date",
+      "concept": "Concept",
+      "category": "Category",
+      "amount": "Amount",
+      "actions": "Actions"
     }
   },
   "profile": {
@@ -127,6 +248,7 @@
     "cancel": "Cancel",
     "save": "Save",
     "delete": "Delete",
-    "copied": "Copied!"
+    "copied": "Copied!",
+    "searchEntity": "SEARCH ENTITY..."
   }
 }

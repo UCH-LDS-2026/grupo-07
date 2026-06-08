@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface SearchBarProps {
   searchTerm: string;
@@ -6,6 +7,7 @@ interface SearchBarProps {
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({ searchTerm, setSearchTerm }) => {
+  const { t } = useTranslation();
   const [isFocused, setIsFocused] = useState(false);
 
   return (
@@ -18,7 +20,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ searchTerm, setSearchTerm }) => {
 
       <input
         type="text"
-        placeholder="BUSCAR ENTIDAD..."
+        placeholder={t('common.searchEntity')}
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         onFocus={() => setIsFocused(true)}

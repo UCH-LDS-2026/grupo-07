@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { Download, Trash2, FileText, CheckCircle2, Clock } from 'lucide-react';
 import { InvoiceModal } from '../components/InvoiceModal';
@@ -6,6 +7,7 @@ import SearchBar from '../components/SearchBar';
 import { jsPDF } from 'jspdf';
 
 export const Invoices = () => {
+  const { t } = useTranslation();
   const [invoices, setInvoices] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -61,7 +63,7 @@ export const Invoices = () => {
   };
 
   const deleteInvoice = async (invoiceId: number) => {
-    if (!window.confirm('¿Confirmar eliminación permanente de esta factura? Esta acción no se puede deshacer.')) return;
+    if (!window.confirm(t('invoices.confirmDelete'))) return;
 
     const { error } = await supabase
       .from('invoices')
@@ -188,9 +190,9 @@ export const Invoices = () => {
         <div>
           <h2 className="text-white text-3xl font-outfit font-black tracking-tighter uppercase flex items-center gap-3 transition-colors">
             <FileText className="text-cyan-400" size={32} />
-            Facturas
+            {t('invoices.title')}
           </h2>
-          <p className="text-outline font-space text-[10px] uppercase tracking-[0.2em] mt-2 transition-colors">Gestión y control de pagos</p>
+          <p className="text-outline font-space text-[10px] uppercase tracking-[0.2em] mt-2 transition-colors">{t('invoices.subtitle')}</p>
         </div>
         
         <div className="flex items-center gap-4">
@@ -200,7 +202,7 @@ export const Invoices = () => {
             className="border border-white/10 text-white bg-white/[0.02] hover:bg-white/5 px-4 py-2.5 rounded-xl font-space font-bold text-[10px] uppercase tracking-widest transition-all flex items-center gap-2"
           >
             <Clock size={14} />
-            Sincronizar
+            {t('invoices.sync')}
           </button>
         </div>
       </div>
@@ -211,11 +213,11 @@ export const Invoices = () => {
           <table className="w-full text-left border-collapse">
             <thead className="text-outline font-space text-[10px] uppercase tracking-widest bg-white/[0.03] border-b border-white/5 transition-colors">
               <tr>
-                <th className="px-8 py-5 font-medium">Factura ID</th>
-                <th className="px-8 py-5 font-medium">Proyecto & Cliente</th>
-                <th className="px-8 py-5 font-medium">Monto (Con IVA)</th>
-                <th className="px-8 py-5 font-medium">Estado</th>
-                <th className="px-8 py-5 font-medium text-right">Acciones</th>
+                <th className="px-8 py-5 font-medium">{t('invoices.columns.invoiceId')}</th>
+                <th className="px-8 py-5 font-medium">{t('invoices.columns.projectClient')}</th>
+                <th className="px-8 py-5 font-medium">{t('invoices.columns.amount')}</th>
+                <th className="px-8 py-5 font-medium">{t('invoices.columns.status')}</th>
+                <th className="px-8 py-5 font-medium text-right">{t('invoices.columns.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -224,7 +226,7 @@ export const Invoices = () => {
                   <td colSpan={5} className="px-8 py-16 text-center">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-                      <p className="text-cyan-500 font-space text-[10px] uppercase tracking-widest animate-pulse">Sincronizando Base de Datos...</p>
+                      <p className="text-cyan-500 font-space text-[10px] uppercase tracking-widest animate-pulse">{t('invoices.loading')}</p>
                     </div>
                   </td>
                 </tr>
@@ -233,7 +235,7 @@ export const Invoices = () => {
                   <td colSpan={5} className="px-8 py-16 text-center">
                     <div className="flex flex-col items-center justify-center text-outline">
                       <FileText size={32} className="mb-3 opacity-20" />
-                      <p className="font-space text-[10px] uppercase tracking-widest">No hay facturas registradas en el sistema.</p>
+                      <p className="font-space text-[10px] uppercase tracking-widest">{t('invoices.empty')}</p>
                     </div>
                   </td>
                 </tr>
@@ -281,12 +283,12 @@ export const Invoices = () => {
                         {invoice.status === 'paid' ? (
                           <>
                             <CheckCircle2 size={12} />
-                            Pagado
+                            {t('invoices.status.paid')}
                           </>
                         ) : (
                           <>
                             <Clock size={12} />
-                            Pendiente
+                            {t('invoices.status.pending')}
                           </>
                         )}
                       </button>
