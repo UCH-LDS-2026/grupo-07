@@ -90,14 +90,14 @@ export default function Sidebar({ activePage, onNavigate, onStartProject, curren
             {dolarLoading ? (
               <div className="flex items-center justify-center gap-2 py-3">
                 <div className="w-3 h-3 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-[9px] text-white/40 font-space uppercase tracking-widest">Sincronizando...</span>
+                <span className="text-[9px] text-white/40 font-space uppercase tracking-widest">{t('finance.syncing', 'Sincronizando...')}</span>
               </div>
             ) : dolarInfo ? (
               <div className="flex flex-col">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[8px] text-white/40 font-space uppercase tracking-widest flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse"></span>
-                    MERCADO BLUE
+                    {t('finance.marketBlue', 'MERCADO BLUE')}
                   </span>
                 </div>
                 
@@ -108,8 +108,8 @@ export default function Sidebar({ activePage, onNavigate, onStartProject, curren
                 
                 {/* DETALLES COMPRA/VENTA (Ajustados con mayor tamaño y nitidez) */}
                 <div className="flex justify-between items-center text-[11px] font-bold uppercase font-mono tracking-wider text-white/60 mt-1">
-                  <span>COMPRA: ${dolarInfo.compra.toLocaleString('es-AR')}</span>
-                  <span>VENTA: ${dolarInfo.venta.toLocaleString('es-AR')}</span>
+                  <span>{t('finance.buy', 'COMPRA:')} ${dolarInfo.compra.toLocaleString('es-AR')}</span>
+                  <span>{t('finance.sell', 'VENTA:')} ${dolarInfo.venta.toLocaleString('es-AR')}</span>
                 </div>
               </div>
             ) : null}

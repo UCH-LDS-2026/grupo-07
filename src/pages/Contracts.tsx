@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import SearchBar from '../components/SearchBar';
@@ -20,7 +20,14 @@ export default function Contracts({ contracts, onRefresh, userId, projects = [] 
   const [dueDate, setDueDate] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredContracts = contracts.filter(contract => {
+  const [localContracts, setLocalContracts] = useState<any[]>(contracts);
+
+  // Sincronizar el estado local si el prop cambia desde afuera (ej. si se ejecuta fetchAppData del App)
+  useEffect(() => {
+    setLocalContracts(contracts);
+  }, [contracts]);
+
+  const filteredContracts = localContracts.filter(contract => {
     const search = searchTerm.toLowerCase().trim();
     return (
       (contract.title && contract.title.toLowerCase().includes(search)) ||
@@ -101,7 +108,7 @@ export default function Contracts({ contracts, onRefresh, userId, projects = [] 
       });
 
       // Guardado del Contrato Base
-      const { error: contractError } = await supabase
+      const { data: newContract, error: contractError } = await supabase
         .from('contracts')
         .insert([
           {
@@ -109,11 +116,13 @@ export default function Contracts({ contracts, onRefresh, userId, projects = [] 
             amount: totalWithTax, 
             status: 'active',
             legal_hash: 'nexus_sha256_' + Math.random().toString(16).substring(2, 12),
-            operator_id: userId,
+            user_id: userId,
             project_id: project.id,
             client_id: foundClient.id
           }
-        ]);
+        ])
+        .select('id')
+        .single();
 
       if (contractError) {
         console.error("❌ ERROR AL CREAR EL CONTRATO BASE:", contractError);
@@ -122,7 +131,7 @@ export default function Contracts({ contracts, onRefresh, userId, projects = [] 
 
       const baseCode = Math.floor(100 + Math.random() * 900);
 
-      // Inserción Automatizada de Hitos en 'invoices' (Estructura segura sin columnas fantasma)
+      // Inserción Automatizada de Hitos en 'invoices'
       const { error: invoicesError } = await supabase
         .from('invoices')
         .insert([
@@ -131,14 +140,16 @@ export default function Contracts({ contracts, onRefresh, userId, projects = [] 
             amount: halfTotalAmount,   
             status: 'pending',
             project_id: project.id, 
-            client_id: foundClient.id
+            client_id: foundClient.id,
+            contract_id: newContract.id
           },
           {
             invoice_number: `${baseCode}-END`,
             amount: halfTotalAmount,   
             status: 'pending',
             project_id: project.id, 
-            client_id: foundClient.id
+            client_id: foundClient.id,
+            contract_id: newContract.id
           }
         ]);
 
@@ -148,6 +159,11 @@ export default function Contracts({ contracts, onRefresh, userId, projects = [] 
       }
 
       console.log(`✅ CONTRATO E HITOS EMITIDOS\n\nDesglose:\n• Neto base: $${netBudget.toLocaleString('es-AR')}\n• IVA aplicado (${taxPercentage}%): $${totalTax.toLocaleString('es-AR')}\n• Monto total del contrato: $${totalWithTax.toLocaleString('es-AR')}\n\nLas dos facturas del 50% ($${halfTotalAmount.toLocaleString('es-AR')} c/u) se inyectaron correctamente.`);
+      
+      window.dispatchEvent(new CustomEvent('terminal-log', { detail: "[Contract] SUCCESS: Nuevo contrato laboral generado y registrado." }));
+
+      // ACTULIZAR ESTADO LOCAL INSTANTÁNEAMENTE PARA REACTIVIDAD
+      setLocalContracts(prev => [newContract, ...prev]);
 
       setShowForm(false);
       setSelectedProjectId('');
@@ -155,7 +171,7 @@ export default function Contracts({ contracts, onRefresh, userId, projects = [] 
       setDueDate('');
 
       if (typeof onRefresh === 'function') {
-        await onRefresh();
+        onRefresh(); // Ejecutar en background sin bloquear
       }
 
     } catch (err: any) {
@@ -173,6 +189,17 @@ export default function Contracts({ contracts, onRefresh, userId, projects = [] 
     }
 
     try {
+      // 1. Borrado en Cascada: Eliminar facturas vinculadas primero
+      const { error: invoicesError } = await supabase
+        .from('invoices')
+        .delete()
+        .eq('contract_id', contractId);
+
+      if (invoicesError) {
+        console.warn("Advertencia: No se pudieron eliminar las facturas asociadas o no existían.", invoicesError);
+      }
+
+      // 2. Eliminar el contrato
       const { error } = await supabase
         .from('contracts')
         .delete()
@@ -181,9 +208,12 @@ export default function Contracts({ contracts, onRefresh, userId, projects = [] 
       if (error) throw error;
 
       console.log("Contrato revocado del sistema.");
+      
+      // ELIMINAR DEL ESTADO LOCAL INSTANTÁNEAMENTE
+      setLocalContracts(prev => prev.filter(c => c.id !== contractId));
 
       if (typeof onRefresh === 'function') {
-        await onRefresh();
+        onRefresh(); // Ejecutar en background sin bloquear
       }
     } catch (err: any) {
       console.error("Error al eliminar contrato:", err);
@@ -331,15 +361,19 @@ export default function Contracts({ contracts, onRefresh, userId, projects = [] 
     <div className="p-8 min-h-screen bg-[#05070a] text-white font-space relative overflow-hidden transition-colors duration-500">
       <div className="scanline-overlay pointer-events-none"></div>
 
-      <header className="mb-12 relative z-10">
+      <header className="mb-6 select-none animate-fade-in relative z-10">
         <div className="flex items-center gap-2 mb-2">
           <div className="w-12 h-[1px] bg-primary-container/50"></div>
           <span className="text-primary-container font-space text-[10px] font-bold uppercase tracking-widest">{t('contracts.headerLabel')}</span>
         </div>
         <div className="flex justify-between items-end">
           <div>
-            <h1 className="text-4xl font-outfit font-extrabold tracking-tighter text-white mb-2 transition-colors">{t('contracts.title')}</h1>
-            <p className="text-outline text-[10px] tracking-[0.3em] uppercase transition-colors">{t('contracts.subtitle')}</p>
+            <h1 className="text-2xl font-black tracking-wider text-white uppercase font-sans transition-all duration-300 ease-in-out hover:text-cyan-400 cursor-default">
+              {t('contracts.title').split('//')[0]} <span className="text-xl font-bold tracking-wide text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.3)] transition-all duration-300">//{t('contracts.title').split('//')[1]}</span>
+            </h1>
+            <p className="text-xs font-semibold tracking-widest text-gray-400 uppercase mt-1 opacity-80 border-l-2 border-cyan-500 pl-2">
+              {t('contracts.subtitle')}
+            </p>
           </div>
           <div className="flex items-center gap-4">
             <button

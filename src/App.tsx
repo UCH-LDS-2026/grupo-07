@@ -100,7 +100,7 @@ function App() {
         const { data: contractsData, error: contractsError } = await supabase
           .from('contracts')
           .select('*')
-          .eq('operator_id', userId)
+          .eq('user_id', userId)
           .order('created_at', { ascending: false });
 
         if (!contractsError && contractsData) {
@@ -117,12 +117,12 @@ function App() {
         supabase
           .from('projects')
           .select('*')
-          .eq('operator_id', userId)
+          .eq('user_id', userId)
           .order('created_at', { ascending: false }),
         supabase
           .from('expenses')
           .select('*')
-          .eq('operator_id', userId)
+          .eq('user_id', userId)
           .order('date', { ascending: false }),
       ]);
 
@@ -154,7 +154,7 @@ function App() {
         const clientsRes = await supabase
           .from('clients')
           .select('*')
-          .eq('operator_id', userId)
+          .eq('user_id', userId)
           .order('name', { ascending: true });
 
         if (!clientsRes.error && clientsRes.data) {
@@ -206,7 +206,15 @@ function App() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    // Limpiar todo el estado global para que no queden datos del usuario anterior en memoria
     setIsAuthenticated(false);
+    setCurrentUser(null);
+    setProjects([]);
+    setClients([]);
+    setExpenses([]);
+    setContracts([]);
+    setActivePage('dashboard');
+    localStorage.removeItem('nexus_active_page');
   };
 
   const renderPage = () => {
@@ -256,6 +264,7 @@ function App() {
             projects={projects}
             onDelete={async (clientName) => {
               await supabase.from('clients').delete().eq('name', clientName);
+              window.dispatchEvent(new CustomEvent('terminal-log', { detail: "[Directory] REMOVED: El cliente fue eliminado correctamente del sistema." }));
               fetchAppData(currentUser.id);
             }}
             userId={currentUser?.id || ''}
@@ -264,7 +273,7 @@ function App() {
           />
         );
       case 'billing': 
-        return <Invoices />;
+        return <Invoices userId={currentUser?.id || ''} />;
       
       case 'contracts':
         return (

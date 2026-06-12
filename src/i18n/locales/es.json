@@ -15,8 +15,8 @@
     }
   },
   "dashboard": {
-    "title": "Nexus_Dashboard",
-    "subtitle": "Módulo Operativo Activo",
+    "title": "PANEL DE CONTROL // MÓDULO OPERATIVO ACTIVO",
+    "subtitle": "SISTEMA DE COMANDO CENTRAL",
     "kpi": {
       "projects": "Proyectos Activos",
       "income": "Ingresos Históricos",
@@ -69,7 +69,7 @@
   },
   "clients": {
     "title": "DIRECTORIO // RELACIONES",
-    "subtitle": "Módulo de Gestión Estratégica de Clientes [NEXUS_DB]",
+    "subtitle": "MÓDULO DE GESTIÓN ESTRATÉGICA DE CLIENTES",
     "newClient": "NUEVO CLIENTE",
     "terminal": "Terminal de Datos de Clientes",
     "kpis": {
@@ -89,8 +89,8 @@
     "noEntities": "Sin entidades registradas"
   },
   "projects": {
-    "title": "GESTIÓN TERMINAL",
-    "subtitle": "Módulo Emma-Nexus [DB_SYNC_READY]",
+    "title": "GESTIÓN // TERMINAL",
+    "subtitle": "MÓDULO EMMA-NEXUS [DB_SYNC_READY]",
     "headerLabel": "Operational Terminal",
     "sectionLabel": "Client & Project Assets",
     "searchPlaceholder": "BUSCAR PROYECTO...",
@@ -105,8 +105,8 @@
     "confirmDelete": "¿Eliminar definitivamente"
   },
   "contracts": {
-    "title": "Contratos Legales",
-    "subtitle": "Generación Automatizada",
+    "title": "CONTRATOS // LEGALES",
+    "subtitle": "GENERACIÓN AUTOMATIZADA DE DOCUMENTOS",
     "headerLabel": "Legal System",
     "sync": "Sincronizar",
     "structureContract": "Estructurar Contrato",
@@ -133,8 +133,8 @@
     "confirmDelete": "¿Estás seguro de que querés rescindir y eliminar este contrato definitivamente?"
   },
   "invoices": {
-    "title": "Facturas",
-    "subtitle": "Gestión y control de pagos",
+    "title": "FACTURAS // CONTROL DE PAGOS",
+    "subtitle": "GESTIÓN Y ADMINISTRACIÓN DE COBROS",
     "sync": "Sincronizar",
     "loading": "Sincronizando Base de Datos...",
     "empty": "No hay facturas registradas en el sistema.",
@@ -153,8 +153,8 @@
     }
   },
   "expenses": {
-    "title": "Nexus_Expenses",
-    "subtitle": "Gestión de Flujo de Caja",
+    "title": "FINANZAS // FLUJO DE CAJA",
+    "subtitle": "GESTIÓN DE EGRESOS Y CAPITAL OPERATIVO",
     "searchPlaceholder": "BUSCAR GASTO...",
     "newExpense": "Nuevo Gasto",
     "cancel": "Cancelar",
@@ -248,7 +248,14 @@
     "cancel": "Cancelar",
     "save": "Guardar",
     "delete": "Eliminar",
+    "edit": "Editar",
     "copied": "¡Copiado!",
     "searchEntity": "BUSCAR ENTIDAD..."
+  },
+  "finance": {
+    "buy": "COMPRA:",
+    "sell": "VENTA:",
+    "marketBlue": "MERCADO BLUE",
+    "syncing": "Sincronizando..."
   }
 }

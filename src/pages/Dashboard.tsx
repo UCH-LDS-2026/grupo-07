@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   FiActivity, FiCpu, FiArrowUpRight, FiLayers
@@ -25,7 +25,12 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
   const [totalPaid, setTotalPaid] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [realLogs, setRealLogs] = useState<any[]>([]);
-  const [terminalLogs, setTerminalLogs] = useState<any[]>([]);
+  const [logs, setLogs] = useState<string[]>([
+    "[SYS] INIT: Iniciando módulo Emma-Nexus...",
+    "[SYS] STATUS: Sincronización con base de datos Supabase ok.",
+    "[SYS] AUTH: Operador EMMANUEL BUSTOS en línea.",
+    "[SYS] NEXUS_DIVISA: Enlace exitoso. Cotización Dólar Blue sincronizada en tiempo real: $1450"
+  ]);
   const [lineData, setLineData] = useState<any[]>([]);
   
   // Tasks CRUD
@@ -42,6 +47,30 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
 
   const monthKeys = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
 
+  // Referencias para terminal acumulativa y scroll
+  const terminalRef = useRef<HTMLDivElement>(null);
+  const hasInitializedLogs = useRef(false);
+  const hasLoadedHistory = useRef(false);
+
+  // Auto-scroll effect
+  useEffect(() => {
+    if (terminalRef.current) {
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+    }
+  }, [logs]);
+
+  // LISTENER GLOBAL DE EVENTOS CUSTOMIZADOS
+  useEffect(() => {
+    const handleNewLog = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      if (customEvent.detail) {
+        setLogs(prev => [...prev, customEvent.detail]);
+      }
+    };
+    window.addEventListener('terminal-log', handleNewLog);
+    return () => window.removeEventListener('terminal-log', handleNewLog);
+  }, []);
+
   useEffect(() => {
     const initFetch = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -55,7 +84,7 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
         const { count: countProjects } = await supabase
           .from('projects')
           .select('*', { count: 'exact', head: true })
-          .eq('operator_id', currentUserId);
+          .eq('user_id', currentUserId);
         setProjectCount(countProjects || 0);
 
         // 2. Suma real de facturas pagadas (Ingresos) y Mapeo del Gráfico
@@ -95,7 +124,7 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
         const { data: expensesData } = await supabase
           .from('expenses')
           .select('amount')
-          .eq('operator_id', currentUserId);
+          .eq('user_id', currentUserId);
         const sumExpenses = expensesData?.reduce((acc, exp) => acc + (Number(exp.amount) || 0), 0) || 0;
         setTotalExpenses(sumExpenses);
 
@@ -129,69 +158,31 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
     initFetch();
   }, [currency]);
 
-  useEffect(() => {
-    if (realLogs.length === 0 && projectCount === 0) return; // Esperar data real
-    if (dolarLoading) return; // Esperar a que la cotización termine de cargar
 
-    const baseSequence = [
-      { time: 'SYS', type: 'INIT', msg: 'Iniciando módulo Emma-Nexus...', color: 'text-white/50', delay: 300 },
-      { time: 'SYS', type: 'STATUS', msg: 'Sincronización con base de datos Supabase ok.', color: 'text-green-400', delay: 1000 },
-      { time: 'SYS', type: 'AUTH', msg: 'Operador EMMANUEL BUSTOS en línea.', color: 'text-cyan-400', delay: 1800 },
-    ];
-
-    if (dolarError) {
-      baseSequence.push({
-        time: 'SYS', type: 'NEXUS_WARNING', msg: 'Error de red en servidor de divisas. Utilizando cotización de contingencia interna ($1400).', color: 'text-amber-400', delay: 2300
-      });
-    } else {
-      baseSequence.push({
-        time: 'SYS', type: 'NEXUS_DIVISA', msg: `Enlace exitoso. Cotización Dólar Blue sincronizada en tiempo real: $${dolarRate}`, color: 'text-green-400', delay: 2300
-      });
-    }
-
-    const sequence = [
-      ...baseSequence,
-      ...realLogs.map((l, i) => ({ ...l, delay: 2800 + i * 400 }))
-    ];
-
-    setTerminalLogs([]);
-
-    const timeouts = sequence.map(item => 
-      setTimeout(() => {
-        setTerminalLogs(prev => [...prev, item]);
-      }, item.delay)
-    );
-
-    return () => timeouts.forEach(clearTimeout);
-  }, [realLogs, projectCount, dolarLoading, dolarError, dolarRate]);
 
   // LOG DE CONFIRMACIÓN DE IDIOMA EN TERMINAL
   const { i18n } = useTranslation();
   const [currentLang, setCurrentLang] = useState(i18n.language);
 
   useEffect(() => {
-    if (i18n.language !== currentLang && terminalLogs.length > 0) {
+    if (i18n.language !== currentLang && logs.length > 0) {
       setCurrentLang(i18n.language);
       const langName = i18n.language === 'en' ? 'ENGLISH' : 'ESPAÑOL';
       const msg = i18n.language === 'en' 
-        ? `Language core set to: ${langName}` 
-        : `Idioma configurado en: ${langName}`;
+        ? `[SYS] NEXUS_SYSTEM: Language core set to: ${langName}` 
+        : `[SYS] NEXUS_SYSTEM: Idioma configurado en: ${langName}`;
 
-      setTerminalLogs(prev => [
-        ...prev,
-        { time: 'SYS', type: 'NEXUS_SYSTEM', msg, color: 'text-blue-400' }
-      ]);
+      setLogs(prev => [...prev, msg]);
     } else if (i18n.language !== currentLang) {
-      // Si la terminal no estaba lista, igual actualizamos el estado para no desfasarnos
       setCurrentLang(i18n.language);
     }
-  }, [i18n.language, currentLang, terminalLogs.length]);
+  }, [i18n.language, currentLang, logs.length]);
 
   const fetchTasks = async (uid: string) => {
     const { data: tasksData, error } = await supabase
       .from('tasks')
       .select('*')
-      .eq('operator_id', uid)
+      .eq('user_id', uid)
       .order('created_at', { ascending: true });
     
     if (!error && tasksData) {
@@ -203,7 +194,7 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
     const { data, error } = await supabase
       .from('operator_links')
       .select('*')
-      .eq('operator_id', uid)
+      .eq('user_id', uid)
       .order('created_at', { ascending: true });
     
     if (!error && data) {
@@ -215,7 +206,7 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
     if (!newLink.title || !newLink.url || !userId) return;
     setIsLinkLoading(true);
     const { error } = await supabase.from('operator_links').insert([{
-      operator_id: userId,
+      user_id: userId,
       title: newLink.title,
       url: newLink.url,
       icon: newLink.icon
@@ -264,7 +255,7 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
           {
             text: newTaskText.trim(),
             done: false,
-            operator_id: userId
+            user_id: userId
           }
         ]);
         
@@ -327,10 +318,14 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
       <div className="scanline-overlay pointer-events-none"></div>
 
       {/* ---------------- CABECERA ---------------- */}
-      <div className="mb-8 relative z-10 flex justify-between items-start">
+      <div className="mb-6 select-none animate-fade-in relative z-10 flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-black uppercase italic tracking-tighter text-white neon-text font-outfit text-left transition-colors">{t('dashboard.title')}</h1>
-          <p className="text-[10px] tracking-[0.4em] text-white/40 uppercase text-left transition-colors">{t('dashboard.subtitle')}</p>
+          <h1 className="text-2xl font-black tracking-wider text-white uppercase font-sans transition-all duration-300 ease-in-out hover:text-cyan-400 cursor-default">
+            {t('dashboard.title').split('//')[0]} <span className="text-xl font-bold tracking-wide text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.3)] transition-all duration-300">//{t('dashboard.title').split('//')[1]}</span>
+          </h1>
+          <p className="text-xs font-semibold tracking-widest text-gray-400 uppercase mt-1 opacity-80 border-l-2 border-cyan-500 pl-2">
+            {t('dashboard.subtitle')}
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <LanguageSelector />
@@ -433,15 +428,9 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
           <h2 className="text-[10px] uppercase tracking-[0.3em] text-green-400 mb-5 flex items-center gap-2 font-space">
             <TerminalIcon size={14} /> {t('dashboard.terminal.title')}
           </h2>
-          <div className="flex-1 overflow-y-auto space-y-3 text-xs pr-2 custom-scrollbar">
-            {terminalLogs.map((log, i) => (
-              <div key={i} className="flex gap-3 hover:bg-white/[0.02] p-1 rounded transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <span className="text-white/30 shrink-0">[{log.time || t(log.timeKey)}]</span>
-                <span className={`${log.color} font-bold shrink-0`}>{log.type}:</span>
-                <span className="text-white/70">
-                  {log.msg || `${t('dashboard.terminal.record')} ${log.invoiceNumber || 'N/A'} ${t('dashboard.terminal.by')} ${currency} ${Number(log.amount).toLocaleString('es-AR')}`}
-                </span>
-              </div>
+          <div ref={terminalRef} className="flex-1 overflow-y-auto space-y-3 text-xs pr-2 custom-scrollbar scroll-smooth">
+            {logs.map((log, index) => (
+              <div key={index} className="font-mono text-xs mb-1 text-green-400">{log}</div>
             ))}
             <div className="flex gap-3 mt-4 items-center">
               <span className="text-green-500/80 font-bold">NEXUS_SYS &gt;</span>

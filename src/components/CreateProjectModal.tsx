@@ -27,19 +27,21 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
     taxRate: '0' // Control dinámico de impuestos
   });
 
-  // 1. CARGAR CLIENTES DESDE EL DIRECTORIO
+  // 1. CARGAR CLIENTES DESDE EL DIRECTORIO AISLADOS POR USUARIO
   useEffect(() => {
     const fetchClients = async () => {
+      if (!userId) return;
       const { data, error } = await supabase
         .from('clients')
         .select('id, name, email, phone')
+        .eq('user_id', userId)
         .order('name', { ascending: true });
       
       if (!error && data) setClients(data);
     };
 
     if (isOpen) fetchClients();
-  }, [isOpen]);
+  }, [isOpen, userId]);
 
   // 2. ACTUALIZAR DATOS CUANDO SE SELECCIONA UN CLIENTE
   const handleClientChange = (clientId: string) => {
@@ -85,7 +87,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
             tax_rate: parseInt(newProject.taxRate), // Guardado de tasa internacional
             status: 'ACTIVE',
             progress: 0,
-            operator_id: userId
+            user_id: userId
           }
         ]);
 
