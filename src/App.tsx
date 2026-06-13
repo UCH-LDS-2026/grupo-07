@@ -234,7 +234,7 @@ function App() {
 
     switch (activePage) {
       case 'dashboard':
-        return <Dashboard projects={projects} expenses={expenses} {...commonProps} />;
+        return <Dashboard projects={projects} expenses={expenses} onNavigate={setActivePage} {...commonProps} />;
       case 'expenses':
         return <Expenses expenses={expenses} projects={projects} {...commonProps} operatorId={currentUser?.id} onRefresh={() => fetchAppData(currentUser.id)} />;
       case 'projects':
