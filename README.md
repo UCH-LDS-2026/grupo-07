@@ -158,87 +158,152 @@ Reglas:
 📐 Diagrama de Clases
 
 ```mermaid
-classDiagram
-    class Operador {
+    classDiagram
+    class Profiles {
         +UUID id
-        +String nombreCompleto
+        +String name
+        +String role
         +String email
-        +String rol
-        +Date ultimoAcceso
-        +autenticar() boolean
-        +obtenerDashboard() JSON
+        +String phone
+        +String avatar_url
+        +String github_user
+        +String linkedin_user
+        +String instagram_user
+        +Timestamp updated_at
     }
 
-    class Cliente {
+    class Clients {
         +UUID id
-        +String nombreEmpresa
-        +String contactoPrincipal
-        +EstadoPago estadoPagos
-        +Float historialFacturacion
-        +calcularRentabilidadGlobal() Float
-        +actualizarPerfil() void
+        +UUID user_id
+        +UUID operator_id
+        +String name
+        +String email
+        +String company
+        +String phone
+        +String drive_url
+        +ClientStatus status
+        +Timestamp created_at
     }
 
-    class Proyecto {
-        +UUID id
-        +String titulo
-        +EstadoFase faseActual
+    class Projects {
+        +BigInt id
+        +UUID user_id
+        +UUID operator_id
+        +UUID client_id
+        +String title
+        +String client
+        +String purpose
+        +String tech
+        +ProjectStatus status
+        +Int progress
+        +String git_repo
+        +String drive_url
+        +Numeric budget
+        +Numeric paid
         +Date deadline
-        +Float progresoPorcentaje
-        +String repositorioGit
-        +String driveDocumentacion
-        +List~String~ stackTech
-        +actualizarProgreso(Float avance) void
-        +evaluarRiesgoDeadline() NivelRiesgo
+        +Timestamp created_at
     }
 
-    class GastoOperativo {
+    class Expenses {
+        +BigInt id
+        +UUID user_id
+        +UUID operator_id
+        +String concept
+        +ExpenseCategory category
+        +Numeric amount
+        +String date
+        +Timestamp created_at
+    }
+
+    class Invoices {
         +UUID id
-        +String descripcion
-        +Float monto
-        +Moneda tipoMoneda
-        +Date fechaRegistro
-        +registrarMovimiento() void
+        +UUID user_id
+        +UUID client_id
+        +BigInt project_id
+        +UUID contract_id
+        +String invoice_number
+        +Numeric amount
+        +Numeric net_amount
+        +Numeric tax_amount
+        +InvoiceStatus status
+        +Timestamp created_at
     }
 
-    class IntervencionIA {
+    class Contracts {
         +UUID id
-        +String tipo
-        +String recomendacion
-        +Float metricaImpacto
-        +Date fechaEmision
-        +generarPlanRecuperacion() String
+        +UUID user_id
+        +UUID operator_id
+        +UUID client_id
+        +BigInt project_id
+        +String title
+        +Numeric amount
+        +ContractStatus status
+        +String legal_hash
+        +Timestamp created_at
     }
 
-    class EstadoPago {
+    class Tasks {
+        +BigInt id
+        +UUID user_id
+        +UUID operator_id
+        +String text
+        +Boolean done
+        +Timestamp created_at
+    }
+
+    class ClientStatus {
         <<enumeration>>
-        AL_DIA
-        PENDIENTE
-        MOROSO
+        Active
+        Inactive
     }
 
-    class EstadoFase {
+    class ProjectStatus {
         <<enumeration>>
-        BACKLOG
-        EN_DESARROLLO
-        TESTING
-        MANTENIMIENTO
+        ACTIVE
+        PAUSED
+        FINISHED
     }
 
-    class Moneda {
+    class ExpenseCategory {
         <<enumeration>>
-        USD
-        ARS
+        Software
+        Hardware
+        Marketing
+        Servicios
+        Impuestos
+        Otros
     }
 
-    Operador "1" --> "*" Cliente : gestiona
-    Operador "1" --> "*" Proyecto : monitorea
-    Cliente "1" --> "*" Proyecto : contrata
-    Proyecto "1" --> "*" GastoOperativo : imputa
-    Proyecto "1" --> "0..1" IntervencionIA : dispara (Smart Engine)
-    Cliente ..> EstadoPago
-    Proyecto ..> EstadoFase
-    GastoOperativo ..> Moneda
+    class InvoiceStatus {
+        <<enumeration>>
+        pending
+        paid
+    }
+
+    class ContractStatus {
+        <<enumeration>>
+        draft
+        active
+        terminated
+    }
+
+    %% Relaciones del Sistema Nexus
+    Profiles "1" --> "*" Clients : gestiona
+    Profiles "1" --> "*" Projects : desarrolla
+    Profiles "1" --> "*" Expenses : rinde
+    Clients "1" --> "*" Projects : posee
+    Projects "1" --> "*" Contracts : firma
+    Projects "1" --> "*" Invoices : genera
+    Clients "1" --> "*" Invoices : recibe
+    Profiles "1" --> "*" Tasks : asigna
+
+    %% Dependencias de Enums
+    Clients ..> ClientStatus
+    Projects ..> ProjectStatus
+    Expenses ..> ExpenseCategory
+    Invoices ..> InvoiceStatus
+    Contracts ..> ContractStatus
+
 ```
 
 📌 Diagrama de Casos de Uso
