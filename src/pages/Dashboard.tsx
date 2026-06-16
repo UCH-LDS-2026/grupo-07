@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   FiActivity, FiCpu, FiArrowUpRight, FiLayers
@@ -16,16 +16,26 @@ interface DashboardProps {
   dolarError?: string | null;
   projects?: any[];
   expenses?: any[];
+  onNavigate?: (page: 'dashboard' | 'clients' | 'projects' | 'expenses' | 'profile' | 'billing' | 'contracts') => void;
+  user?: any;
 }
 
-export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dolarRate = 1, dolarLoading = false, dolarError = null }: DashboardProps) {
+export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dolarRate = 1, dolarLoading = false, dolarError = null, onNavigate, user }: DashboardProps) {
   const { t } = useTranslation();
+
+  const displayName = user?.name || user?.email?.split('@')[0] || 'OPERADOR';
 
   const [projectCount, setProjectCount] = useState(0);
   const [totalPaid, setTotalPaid] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
   const [realLogs, setRealLogs] = useState<any[]>([]);
-  const [terminalLogs, setTerminalLogs] = useState<any[]>([]);
+  const [logs, setLogs] = useState<string[]>([
+    `[SYS] INIT: Iniciando módulo ${displayName.toUpperCase()}-Nexus...`,
+    "[SYS] STATUS: Sincronización con base de datos Supabase ok.",
+    `[SYS] AUTH: Operador ${displayName.toUpperCase()} en línea.`,
+    "[SYS] NEXUS_DIVISA: Enlace exitoso. Cotización Dólar Blue conectada en tiempo real."
+  ]);
   const [lineData, setLineData] = useState<any[]>([]);
   
   // Tasks CRUD
@@ -42,46 +52,76 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
 
   const monthKeys = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
 
+  // Referencias para terminal acumulativa y scroll
+  const terminalRef = useRef<HTMLDivElement>(null);
+  const hasInitializedLogs = useRef(false);
+  const hasLoadedHistory = useRef(false);
+
+  // Auto-scroll effect
+  useEffect(() => {
+    if (terminalRef.current) {
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+    }
+  }, [logs]);
+
+  // LISTENER GLOBAL DE EVENTOS CUSTOMIZADOS
+  useEffect(() => {
+    const handleNewLog = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      if (customEvent.detail) {
+        setLogs(prev => [...prev, customEvent.detail]);
+      }
+    };
+    window.addEventListener('terminal-log', handleNewLog);
+    return () => window.removeEventListener('terminal-log', handleNewLog);
+  }, []);
+
   useEffect(() => {
     const initFetch = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       const currentUserId = session?.user?.id || null;
       setUserId(currentUserId);
-
       if (!currentUserId) return;
 
       try {
-        // 1. Conteo real de proyectos
-        const { count: countProjects } = await supabase
+        // 1. Cargar proyectos reales del operador
+        const { data: dbProjects } = await supabase
           .from('projects')
-          .select('*', { count: 'exact', head: true })
-          .eq('operator_id', currentUserId);
-        setProjectCount(countProjects || 0);
+          .select('*')
+          .eq('user_id', currentUserId);
+        
+        const countProjects = dbProjects?.length || 0;
+        setProjectCount(countProjects);
 
-        // 2. Suma real de facturas pagadas (Ingresos) y Mapeo del Gráfico
+        // 2. Suma real de facturas y Mapeo del Gráfico
         const { data: userInvoices, error: invoicesError } = await supabase
           .from('invoices')
-          .select('amount, created_at')
-          .eq('status', 'paid');
+          .select('*');
           
         if (invoicesError) {
           console.error("Error fetching invoices:", invoicesError.message);
         }
         
+        // Filtrar en memoria por proyectos del operador
+        const userProjectIds = new Set(dbProjects?.map(p => p.id) || []);
+        const filteredInvoices = userInvoices?.filter(inv => userProjectIds.has(inv.project_id)) || [];
+
         let sumPaid = 0;
         const monthlyData = monthKeys.map(k => ({
           monthKey: `dashboard.months.${k}`,
           ingresos: 0
         }));
 
-        userInvoices?.forEach(inv => {
-          const amount = Number(inv.amount) || 0;
-          sumPaid += amount;
+        filteredInvoices.forEach(inv => {
+          if (inv.status === 'paid') {
+            const amount = Number(inv.amount) || 0;
+            sumPaid += amount;
 
-          if (inv.created_at) {
-            const date = new Date(inv.created_at);
-            const monthIndex = date.getMonth();
-            monthlyData[monthIndex].ingresos += amount;
+            if (inv.created_at) {
+              const date = new Date(inv.created_at);
+              const monthIndex = date.getMonth();
+              monthlyData[monthIndex].ingresos += amount;
+            }
           }
         });
 
@@ -95,32 +135,223 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
         const { data: expensesData } = await supabase
           .from('expenses')
           .select('amount')
-          .eq('operator_id', currentUserId);
+          .eq('user_id', currentUserId);
         const sumExpenses = expensesData?.reduce((acc, exp) => acc + (Number(exp.amount) || 0), 0) || 0;
         setTotalExpenses(sumExpenses);
 
         // 4. Terminal logs
-        const { data: recentInvoices } = await supabase
-          .from('invoices')
-          .select('invoice_number, amount, status')
-          .order('created_at', { ascending: false })
-          .limit(3);
+        const recentInvoices = [...filteredInvoices]
+          .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+          .slice(0, 3);
 
-        const logsBase = [
-          ...(recentInvoices || []).map(inv => ({
-            timeKey: 'dashboard.terminal.invoice',
-            type: inv.status === 'paid' ? 'SUCCESS' : 'PENDING',
-            invoiceNumber: inv.invoice_number,
-            amount: inv.amount,
-            color: inv.status === 'paid' ? 'text-green-400' : 'text-amber-400'
-          }))
-        ];
+        const logsBase = recentInvoices.map(inv => ({
+          timeKey: 'dashboard.terminal.invoice',
+          type: inv.status === 'paid' ? 'SUCCESS' : 'PENDING',
+          invoiceNumber: inv.invoice_number,
+          amount: inv.amount,
+          color: inv.status === 'paid' ? 'text-green-400' : 'text-amber-400'
+        }));
         setRealLogs(logsBase);
+
+        // Cargar contratos para recomendación
+        const { data: dbContracts } = await supabase
+          .from('contracts')
+          .select('*')
+          .eq('user_id', currentUserId);
+
+        // Cargar tareas
+        const { data: dbTasks } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('user_id', currentUserId);
 
         // 5. Tasks & Links
         fetchTasks(currentUserId);
         fetchOpLinks(currentUserId);
 
+        // -- ALGORITMO PREDICTIVO DE RECOMENDACIONES (LOCALIZADO & EXTENDIDO) --
+        const recs: any[] = [];
+        const profit = sumPaid - sumExpenses;
+        const personalSalary = profit > 0 ? profit * 0.7 : 0;
+        const isEn = i18n.language === 'en';
+
+        // 1. Gasto vs Ingreso & Déficit Crítico
+        if (sumExpenses > 0) {
+          if (sumPaid === 0) {
+            recs.push({
+              id: 'no-income-expenses',
+              type: 'urgent',
+              title: isEn ? 'Critical Cash Deficit' : 'Déficit crítico de caja',
+              description: isEn
+                ? `You have operational expenses ($${sumExpenses.toLocaleString('en-US')}) but no recorded income. You are operating at a loss.`
+                : `Registras gastos operativos ($${sumExpenses.toLocaleString('es-AR')}) pero no tienes ingresos cobrados en tu terminal. Estás operando en pérdida.`,
+              actionLabel: isEn ? 'View Expenses' : 'Ver Finanzas',
+              actionPage: 'expenses'
+            });
+          } else if (sumExpenses / sumPaid > 0.4) {
+            recs.push({
+              id: 'high-expenses',
+              type: 'warning',
+              title: isEn ? 'High Burn Rate' : 'Tasa de consumo elevada',
+              description: isEn
+                ? `Your operational expenses ($${sumExpenses.toLocaleString('en-US')}) represent ${Math.round((sumExpenses / sumPaid) * 100)}% of your income. Consider reducing non-essential costs.`
+                : `Tus gastos operativos ($${sumExpenses.toLocaleString('es-AR')}) representan el ${Math.round((sumExpenses / sumPaid) * 100)}% de tus ingresos. Evalúa recortar suscripciones o costos no esenciales.`,
+              actionLabel: isEn ? 'View Expenses' : 'Ver Finanzas',
+              actionPage: 'expenses'
+            });
+          }
+        }
+
+        // 2. Facturas pendientes (unpaid)
+        const pendingInvoices = filteredInvoices.filter(inv => inv.status === 'pending');
+        if (pendingInvoices.length > 0) {
+          const totalPendingAmount = pendingInvoices.reduce((acc, inv) => acc + (Number(inv.amount) || 0), 0);
+          recs.push({
+            id: 'pending-invoices',
+            type: 'urgent',
+            title: isEn ? 'Uncollected Revenues' : 'Cobros pendientes de ejecución',
+            description: isEn
+              ? `You have ${pendingInvoices.length} pending invoices for a total of $${totalPendingAmount.toLocaleString('en-US')}. We recommend sending payment reminders.`
+              : `Tienes ${pendingInvoices.length} facturas pendientes por un total de $${totalPendingAmount.toLocaleString('es-AR')}. Recomendamos enviar recordatorios de pago.`,
+            actionLabel: isEn ? 'Manage Invoices' : 'Gestionar Facturas',
+            actionPage: 'billing'
+          });
+        }
+
+        // 3. Proyectos activos sin contrato asociado
+        if (dbProjects && dbProjects.length > 0) {
+          const contractProjectIds = new Set(dbContracts?.map(c => c.project_id) || []);
+          const projectsWithoutContract = dbProjects.filter(p => p.status === 'ACTIVE' && !contractProjectIds.has(p.id));
+          
+          if (projectsWithoutContract.length > 0) {
+            recs.push({
+              id: 'no-contracts',
+              type: 'warning',
+              title: isEn ? 'Active Projects without Legal Contract' : 'Proyectos activos sin contrato legal',
+              description: isEn
+                ? `Detected ${projectsWithoutContract.length} active projects ("${projectsWithoutContract.map(p => p.title).join(', ')}") without an associated contract. Structure a contract to secure payments.`
+                : `Se detectaron ${projectsWithoutContract.length} proyectos activos ("${projectsWithoutContract.map(p => p.title).join(', ')}") sin contrato asociado. Estructura un contrato para asegurar las condiciones de cobro.`,
+              actionLabel: isEn ? 'Structure Contract' : 'Estructurar Contrato',
+              actionPage: 'contracts'
+            });
+          }
+        }
+
+        // 4. Fechas límites de entrega próximas
+        if (dbProjects) {
+          const activeProjects = dbProjects.filter(p => p.status === 'ACTIVE' && p.progress < 100);
+          const now = new Date();
+          const tenDaysFromNow = new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000);
+          
+          activeProjects.forEach(p => {
+            if (p.deadline) {
+              const deadlineDate = new Date(p.deadline);
+              if (deadlineDate < now) {
+                recs.push({
+                  id: `deadline-overdue-${p.id}`,
+                  type: 'urgent',
+                  title: isEn ? `Project "${p.title}" past deadline` : `Proyecto "${p.title}" fuera de plazo`,
+                  description: isEn
+                    ? `The delivery deadline expired on ${deadlineDate.toLocaleDateString('en-US')}. Current progress: ${p.progress}%. Prioritize delivery or coordinate an extension.`
+                    : `La fecha límite de entrega expiró el ${deadlineDate.toLocaleDateString('es-AR')}. Progreso actual: ${p.progress}%. Prioriza su entrega o coordina una prórroga con el cliente.`,
+                  actionLabel: isEn ? 'View Project' : 'Ver Proyecto',
+                  actionPage: 'projects'
+                });
+              } else if (deadlineDate <= tenDaysFromNow) {
+                const daysRemaining = Math.ceil((deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                recs.push({
+                  id: `deadline-close-${p.id}`,
+                  type: 'warning',
+                  title: isEn ? `Upcoming delivery: "${p.title}"` : `Entrega próxima: "${p.title}"`,
+                  description: isEn
+                    ? `Only ${daysRemaining} days left for the delivery deadline (${deadlineDate.toLocaleDateString('en-US')}). Current progress is ${p.progress}%.`
+                    : `Faltan solo ${daysRemaining} días para la fecha límite de entrega (${deadlineDate.toLocaleDateString('es-AR')}). El progreso actual es del ${p.progress}%.`,
+                  actionLabel: isEn ? 'View Project' : 'Ver Proyecto',
+                  actionPage: 'projects'
+                });
+              }
+            }
+          });
+        }
+
+        // 5. Proyectos finalizados con cobro pendiente
+        const finishedProjects = dbProjects?.filter(p => p.status === 'FINISHED') || [];
+        finishedProjects.forEach(p => {
+          const pendingProjectInvoices = filteredInvoices.filter(inv => inv.project_id === p.id && inv.status === 'pending');
+          if (pendingProjectInvoices.length > 0) {
+            const sumPending = pendingProjectInvoices.reduce((acc, inv) => acc + (Number(inv.amount) || 0), 0);
+            recs.push({
+              id: `finished-pending-cobro-${p.id}`,
+              type: 'urgent',
+              title: isEn ? `Outstanding Balance on "${p.title}"` : `Cobro retenido en "${p.title}"`,
+              description: isEn
+                ? `The project is marked as finished but still has ${pendingProjectInvoices.length} pending invoices totaling $${sumPending.toLocaleString('en-US')}. Request the final settlement.`
+                : `El proyecto fue marcado como finalizado pero tiene ${pendingProjectInvoices.length} facturas pendientes por un total de $${sumPending.toLocaleString('es-AR')}. Exige la liquidación final.`,
+              actionLabel: isEn ? 'View Invoices' : 'Ver Facturas',
+              actionPage: 'billing'
+            });
+          }
+        });
+
+        // 6. Cobertura cambiaria (Cotización Dólar Blue)
+        if (dolarRate > 1 && currencyCode === 'ARS') {
+          recs.push({
+            id: 'currency-devaluation-ars',
+            type: 'warning',
+            title: isEn ? 'Exchange Rate Advisory' : 'Monitoreo de devaluación',
+            description: isEn
+              ? `The Dollar Blue is trading at $${dolarRate.toLocaleString('en-US')} ARS. We suggest quoting your active projects in USD to protect your income against inflation.`
+              : `El Dólar Blue cotiza a $${dolarRate.toLocaleString('es-AR')}. Te sugerimos cotizar tus tarifas o contratos en USD para proteger tu margen de honorarios contra la inflación.`,
+            actionLabel: isEn ? 'View Exchange Rate' : 'Ver Cotización',
+            actionPage: 'dashboard'
+          });
+        }
+
+        // 7. Tareas pendientes
+        if (dbTasks) {
+          const pendingTasks = dbTasks.filter(t => !t.done);
+          if (pendingTasks.length > 0) {
+            recs.push({
+              id: 'pending-tasks',
+              type: 'info',
+              title: isEn ? 'Pending Tasks in Agenda' : 'Tareas pendientes en agenda',
+              description: isEn
+                ? `You have ${pendingTasks.length} pending task(s) in your checklist. Keep your workflow clear by completing them.`
+                : `Tienes ${pendingTasks.length} tarea(s) pendiente(s) en tu agenda. Completa los pendientes para mantener limpia tu terminal operativa.`,
+              actionLabel: isEn ? 'View Dashboard' : 'Ver Panel',
+              actionPage: 'dashboard'
+            });
+          }
+        }
+
+        // Si todo está al día
+        if (recs.length === 0) {
+          if (personalSalary > 0) {
+            recs.push({
+              id: 'all-good-salary',
+              type: 'success',
+              title: isEn ? 'Optimal Operational Status' : 'Operaciones en estado óptimo',
+              description: isEn
+                ? `All systems are stable and up to date. Net salary available for distribution: $${personalSalary.toLocaleString('en-US')}. Good job!`
+                : `Todos los sistemas están estables y al día. Salario neto disponible para distribución: $${personalSalary.toLocaleString('es-AR')}. ¡Buen trabajo!`,
+              actionLabel: isEn ? 'New Project' : 'Nuevo Proyecto',
+              actionPage: 'projects'
+            });
+          } else {
+            recs.push({
+              id: 'no-data-rec',
+              type: 'info',
+              title: isEn ? 'Ready to Start Operations' : 'Listo para iniciar operaciones',
+              description: isEn
+                ? 'No transactions or active projects recorded. Set up your first client, start a project, and generate its contract to start monitoring.'
+                : 'No se registran transacciones ni proyectos activos. Configura tu primer cliente, inicia un proyecto y genera su contrato para comenzar a monitorear.',
+              actionLabel: isEn ? 'Start Project' : 'Iniciar Proyecto',
+              actionPage: 'projects'
+            });
+          }
+        }
+
+        setRecommendations(recs);
       } catch (err) {
         console.error("Error al poblar las métricas del dashboard:", err);
       }
@@ -129,69 +360,31 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
     initFetch();
   }, [currency]);
 
-  useEffect(() => {
-    if (realLogs.length === 0 && projectCount === 0) return; // Esperar data real
-    if (dolarLoading) return; // Esperar a que la cotización termine de cargar
 
-    const baseSequence = [
-      { time: 'SYS', type: 'INIT', msg: 'Iniciando módulo Emma-Nexus...', color: 'text-white/50', delay: 300 },
-      { time: 'SYS', type: 'STATUS', msg: 'Sincronización con base de datos Supabase ok.', color: 'text-green-400', delay: 1000 },
-      { time: 'SYS', type: 'AUTH', msg: 'Operador EMMANUEL BUSTOS en línea.', color: 'text-cyan-400', delay: 1800 },
-    ];
-
-    if (dolarError) {
-      baseSequence.push({
-        time: 'SYS', type: 'NEXUS_WARNING', msg: 'Error de red en servidor de divisas. Utilizando cotización de contingencia interna ($1400).', color: 'text-amber-400', delay: 2300
-      });
-    } else {
-      baseSequence.push({
-        time: 'SYS', type: 'NEXUS_DIVISA', msg: `Enlace exitoso. Cotización Dólar Blue sincronizada en tiempo real: $${dolarRate}`, color: 'text-green-400', delay: 2300
-      });
-    }
-
-    const sequence = [
-      ...baseSequence,
-      ...realLogs.map((l, i) => ({ ...l, delay: 2800 + i * 400 }))
-    ];
-
-    setTerminalLogs([]);
-
-    const timeouts = sequence.map(item => 
-      setTimeout(() => {
-        setTerminalLogs(prev => [...prev, item]);
-      }, item.delay)
-    );
-
-    return () => timeouts.forEach(clearTimeout);
-  }, [realLogs, projectCount, dolarLoading, dolarError, dolarRate]);
 
   // LOG DE CONFIRMACIÓN DE IDIOMA EN TERMINAL
   const { i18n } = useTranslation();
   const [currentLang, setCurrentLang] = useState(i18n.language);
 
   useEffect(() => {
-    if (i18n.language !== currentLang && terminalLogs.length > 0) {
+    if (i18n.language !== currentLang && logs.length > 0) {
       setCurrentLang(i18n.language);
       const langName = i18n.language === 'en' ? 'ENGLISH' : 'ESPAÑOL';
       const msg = i18n.language === 'en' 
-        ? `Language core set to: ${langName}` 
-        : `Idioma configurado en: ${langName}`;
+        ? `[SYS] NEXUS_SYSTEM: Language core set to: ${langName}` 
+        : `[SYS] NEXUS_SYSTEM: Idioma configurado en: ${langName}`;
 
-      setTerminalLogs(prev => [
-        ...prev,
-        { time: 'SYS', type: 'NEXUS_SYSTEM', msg, color: 'text-blue-400' }
-      ]);
+      setLogs(prev => [...prev, msg]);
     } else if (i18n.language !== currentLang) {
-      // Si la terminal no estaba lista, igual actualizamos el estado para no desfasarnos
       setCurrentLang(i18n.language);
     }
-  }, [i18n.language, currentLang, terminalLogs.length]);
+  }, [i18n.language, currentLang, logs.length]);
 
   const fetchTasks = async (uid: string) => {
     const { data: tasksData, error } = await supabase
       .from('tasks')
       .select('*')
-      .eq('operator_id', uid)
+      .eq('user_id', uid)
       .order('created_at', { ascending: true });
     
     if (!error && tasksData) {
@@ -203,7 +396,7 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
     const { data, error } = await supabase
       .from('operator_links')
       .select('*')
-      .eq('operator_id', uid)
+      .eq('user_id', uid)
       .order('created_at', { ascending: true });
     
     if (!error && data) {
@@ -215,7 +408,7 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
     if (!newLink.title || !newLink.url || !userId) return;
     setIsLinkLoading(true);
     const { error } = await supabase.from('operator_links').insert([{
-      operator_id: userId,
+      user_id: userId,
       title: newLink.title,
       url: newLink.url,
       icon: newLink.icon
@@ -264,7 +457,7 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
           {
             text: newTaskText.trim(),
             done: false,
-            operator_id: userId
+            user_id: userId
           }
         ]);
         
@@ -327,10 +520,14 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
       <div className="scanline-overlay pointer-events-none"></div>
 
       {/* ---------------- CABECERA ---------------- */}
-      <div className="mb-8 relative z-10 flex justify-between items-start">
+      <div className="mb-6 select-none animate-fade-in relative z-10 flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-black uppercase italic tracking-tighter text-white neon-text font-outfit text-left transition-colors">{t('dashboard.title')}</h1>
-          <p className="text-[10px] tracking-[0.4em] text-white/40 uppercase text-left transition-colors">{t('dashboard.subtitle')}</p>
+          <h1 className="text-2xl font-black tracking-wider text-white uppercase font-sans transition-all duration-300 ease-in-out hover:text-cyan-400 cursor-default">
+            {t('dashboard.title').split('//')[0]} <span className="text-xl font-bold tracking-wide text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.3)] transition-all duration-300">//{t('dashboard.title').split('//')[1]}</span>
+          </h1>
+          <p className="text-xs font-semibold tracking-widest text-gray-400 uppercase mt-1 opacity-80 border-l-2 border-cyan-500 pl-2">
+            {t('dashboard.subtitle')}
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <LanguageSelector />
@@ -433,15 +630,9 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
           <h2 className="text-[10px] uppercase tracking-[0.3em] text-green-400 mb-5 flex items-center gap-2 font-space">
             <TerminalIcon size={14} /> {t('dashboard.terminal.title')}
           </h2>
-          <div className="flex-1 overflow-y-auto space-y-3 text-xs pr-2 custom-scrollbar">
-            {terminalLogs.map((log, i) => (
-              <div key={i} className="flex gap-3 hover:bg-white/[0.02] p-1 rounded transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <span className="text-white/30 shrink-0">[{log.time || t(log.timeKey)}]</span>
-                <span className={`${log.color} font-bold shrink-0`}>{log.type}:</span>
-                <span className="text-white/70">
-                  {log.msg || `${t('dashboard.terminal.record')} ${log.invoiceNumber || 'N/A'} ${t('dashboard.terminal.by')} ${currency} ${Number(log.amount).toLocaleString('es-AR')}`}
-                </span>
-              </div>
+          <div ref={terminalRef} className="flex-1 overflow-y-auto space-y-3 text-xs pr-2 custom-scrollbar scroll-smooth">
+            {logs.map((log, index) => (
+              <div key={index} className="font-mono text-xs mb-1 text-green-400">{log}</div>
             ))}
             <div className="flex gap-3 mt-4 items-center">
               <span className="text-green-500/80 font-bold">NEXUS_SYS &gt;</span>
@@ -607,19 +798,58 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
         </div>
       </div>
 
-      {/* ---------------- ADVISORY BANNER ---------------- */}
+      {/* ---------------- ADVISORY SECTION ---------------- */}
       <div className="glass-card border-l-4 border-l-cyan-500 p-6 bg-cyan-500/5 relative overflow-hidden z-10 text-left transition-all rounded-2xl glow-hover-cyan">
-        <div className="flex items-center gap-4 relative z-10">
-          <div className="p-2 bg-cyan-500/20 rounded-lg text-cyan-400">
+        <div className="flex items-center gap-4 relative z-10 mb-4 pb-4 border-b border-white/5">
+          <div className="p-2 bg-cyan-500/20 rounded-lg text-cyan-400 animate-pulse">
             <FiCpu size={20} />
           </div>
           <div>
-            <h2 className="text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-400 font-space mb-1">{t('dashboard.advisory.title')}</h2>
-            <p className="text-sm font-outfit text-white/80 transition-colors">
-              {t('dashboard.advisory.salaryAvailable')} <span className="text-cyan-400 font-bold">{currency} {cv(personalSalary).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>. 
-              {personalSalary > 1000 ? ` ${t('dashboard.advisory.healthyMargin')}` : ` ${t('dashboard.advisory.lowCash')}`}
+            <h2 className="text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-400 font-space mb-0.5">
+              NEXUS_OPERATIONAL__ADVISORY
+            </h2>
+            <p className="text-[9px] uppercase tracking-widest text-white/40">
+              Módulo de análisis predictivo de flujo de caja y entregables
             </p>
           </div>
+        </div>
+
+        <div className="space-y-4 relative z-10">
+          {recommendations.map((rec) => (
+            <div key={rec.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] hover:border-white/10 transition-all">
+              <div className="flex items-start gap-3">
+                <span className={`px-2 py-0.5 rounded text-[8px] font-bold font-space uppercase border mt-0.5 shrink-0 ${
+                  rec.type === 'urgent'
+                    ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                    : rec.type === 'warning'
+                    ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                    : rec.type === 'success'
+                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                    : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
+                }`}>
+                  {rec.type === 'urgent' ? 'Crítico' : rec.type === 'warning' ? 'Advertencia' : rec.type === 'success' ? 'Óptimo' : 'Sugerencia'}
+                </span>
+                <div>
+                  <h4 className="text-xs font-bold text-white font-space uppercase tracking-wider">{rec.title}</h4>
+                  <p className="text-xs text-white/60 mt-1 font-sans font-medium">{rec.description}</p>
+                </div>
+              </div>
+              {rec.actionPage && onNavigate && (
+                <button
+                  onClick={() => onNavigate(rec.actionPage)}
+                  className={`py-1.5 px-4 rounded-lg font-space text-[10px] font-bold uppercase tracking-wider transition-all border shrink-0 ${
+                    rec.type === 'urgent'
+                      ? 'bg-red-500/15 text-red-400 border-red-500/25 hover:bg-red-500 hover:text-white'
+                      : rec.type === 'warning'
+                      ? 'bg-amber-500/15 text-amber-400 border-amber-500/25 hover:bg-amber-500 hover:text-black font-semibold'
+                      : 'bg-cyan-500/15 text-cyan-400 border-cyan-500/25 hover:bg-cyan-500 hover:text-black font-semibold'
+                  }`}
+                >
+                  Ir al módulo &rarr;
+                </button>
+              )}
+            </div>
+          ))}
         </div>
       </div>
     </div>

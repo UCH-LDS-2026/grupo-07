@@ -17,6 +17,9 @@ interface SidebarProps {
 export default function Sidebar({ activePage, onNavigate, onStartProject, currency, onCurrencyChange, user, dolarRate, dolarLoading, dolarInfo }: SidebarProps) {
   const { t } = useTranslation();
 
+  const displayName = user?.name || user?.email?.split('@')[0] || 'OPERADOR';
+  const headerTitle = `MÓDULO ${displayName.toUpperCase()}-NEXUS [DB_SYNC_READY]`;
+
   const navItems: { id: Page; icon: string; label: string }[] = [
     { id: 'dashboard', icon: 'dashboard', label: t('sidebar.nav.dashboard') },
     { id: 'clients', icon: 'group', label: t('sidebar.nav.clients') },
@@ -27,18 +30,18 @@ export default function Sidebar({ activePage, onNavigate, onStartProject, curren
   ];
 
   return (
-    <aside className="h-screen w-64 fixed left-0 top-0 bg-[#05070a] border-r border-white/5 flex flex-col pt-12 pb-8 px-4 z-40 backdrop-blur-xl transition-colors duration-500">
-      <div className="mb-12 px-4">
+    <aside className="h-screen w-64 fixed left-0 top-0 bg-[#05070a] border-r border-white/5 flex flex-col pt-12 pb-8 px-4 z-40 backdrop-blur-xl transition-colors duration-500 overflow-y-auto">
+      <div className="mb-12 px-4 flex-shrink-0">
         <div className="flex items-center gap-2 mb-1">
           <div className="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center transition-colors">
             <span className="material-symbols-outlined text-on-primary text-xl">hub</span>
           </div>
           <h1 className="text-xl font-outfit font-black text-white tracking-tighter transition-colors">NEXUSSGE</h1>
         </div>
-        <p className="text-[10px] text-primary-container font-space font-bold uppercase tracking-[0.3em] transition-colors">{t('sidebar.labels.operativeOs')}</p>
+        <p className="text-[10px] text-primary-container font-space font-bold uppercase tracking-[0.3em] transition-colors">{headerTitle}</p>
       </div>
 
-      <nav className="flex-1 space-y-1">
+      <nav className="flex-1 space-y-1 flex-shrink-0">
         {navItems.map((item) => {
           const isActive = activePage === item.id;
           return (
@@ -65,7 +68,7 @@ export default function Sidebar({ activePage, onNavigate, onStartProject, curren
         })}
       </nav>
 
-      <div className="mt-auto px-2">
+      <div className="mt-auto px-2 flex-shrink-0">
         {/* Currency Switcher */}
         <div className="mb-6 px-2">
           <p className="text-[9px] text-outline font-space font-bold uppercase tracking-[0.2em] mb-3 ml-1">{t('sidebar.labels.operativeCurrency')}</p>
@@ -90,14 +93,14 @@ export default function Sidebar({ activePage, onNavigate, onStartProject, curren
             {dolarLoading ? (
               <div className="flex items-center justify-center gap-2 py-3">
                 <div className="w-3 h-3 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-[9px] text-white/40 font-space uppercase tracking-widest">Sincronizando...</span>
+                <span className="text-[9px] text-white/40 font-space uppercase tracking-widest">{t('finance.syncing', 'Sincronizando...')}</span>
               </div>
             ) : dolarInfo ? (
               <div className="flex flex-col">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[8px] text-white/40 font-space uppercase tracking-widest flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse"></span>
-                    MERCADO BLUE
+                    {t('finance.marketBlue', 'MERCADO BLUE')}
                   </span>
                 </div>
                 
@@ -108,8 +111,8 @@ export default function Sidebar({ activePage, onNavigate, onStartProject, curren
                 
                 {/* DETALLES COMPRA/VENTA (Ajustados con mayor tamaño y nitidez) */}
                 <div className="flex justify-between items-center text-[11px] font-bold uppercase font-mono tracking-wider text-white/60 mt-1">
-                  <span>COMPRA: ${dolarInfo.compra.toLocaleString('es-AR')}</span>
-                  <span>VENTA: ${dolarInfo.venta.toLocaleString('es-AR')}</span>
+                  <span>{t('finance.buy', 'COMPRA:')} ${dolarInfo.compra.toLocaleString('es-AR')}</span>
+                  <span>{t('finance.sell', 'VENTA:')} ${dolarInfo.venta.toLocaleString('es-AR')}</span>
                 </div>
               </div>
             ) : null}

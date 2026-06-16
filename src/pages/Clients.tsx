@@ -48,12 +48,12 @@ export default function Clients({
       <div className="scanline-overlay"></div>
 
       {/* Header Section */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6 relative z-10">
+      <header className="mb-6 select-none animate-fade-in flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
         <div>
-          <h2 className="font-outfit text-white text-4xl md:text-5xl font-extrabold tracking-tighter neon-text transition-colors">
-            {t('clients.title').split('//')[0]} <span className="text-primary-container font-light">//{t('clients.title').split('//')[1]}</span>
-          </h2>
-          <p className="text-outline font-space text-xs mt-2 tracking-[0.3em] uppercase transition-colors">
+          <h1 className="text-2xl font-black tracking-wider text-white uppercase font-sans transition-all duration-300 ease-in-out hover:text-cyan-400 cursor-default">
+            {t('clients.title').split('//')[0]} <span className="text-xl font-bold tracking-wide text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.3)] transition-all duration-300">//{t('clients.title').split('//')[1]}</span>
+          </h1>
+          <p className="text-xs font-semibold tracking-widest text-gray-400 uppercase mt-1 opacity-80 border-l-2 border-cyan-500 pl-2">
             {t('clients.subtitle')}
           </p>
         </div>

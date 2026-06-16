@@ -100,7 +100,7 @@ function App() {
         const { data: contractsData, error: contractsError } = await supabase
           .from('contracts')
           .select('*')
-          .eq('operator_id', userId)
+          .eq('user_id', userId)
           .order('created_at', { ascending: false });
 
         if (!contractsError && contractsData) {
@@ -116,13 +116,13 @@ function App() {
       const [projectsRes, expensesRes] = await Promise.all([
         supabase
           .from('projects')
-          .select('*')
-          .eq('operator_id', userId)
+          .select('*, clients(name)')
+          .eq('user_id', userId)
           .order('created_at', { ascending: false }),
         supabase
           .from('expenses')
           .select('*')
-          .eq('operator_id', userId)
+          .eq('user_id', userId)
           .order('date', { ascending: false }),
       ]);
 
@@ -130,7 +130,7 @@ function App() {
         const mappedProjects: Project[] = projectsRes.data.map(p => ({
           id: p.id,
           title: p.title,
-          client: p.client,
+          client: p.clients?.name || p.client, // Automatically resolve name from related clients table
           purpose: p.purpose,
           tech: p.tech || '',
           tags: p.tech ? p.tech.split(',').map((t: string) => t.trim()) : [],
@@ -154,7 +154,7 @@ function App() {
         const clientsRes = await supabase
           .from('clients')
           .select('*')
-          .eq('operator_id', userId)
+          .eq('user_id', userId)
           .order('name', { ascending: true });
 
         if (!clientsRes.error && clientsRes.data) {
@@ -206,7 +206,15 @@ function App() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    // Limpiar todo el estado global para que no queden datos del usuario anterior en memoria
     setIsAuthenticated(false);
+    setCurrentUser(null);
+    setProjects([]);
+    setClients([]);
+    setExpenses([]);
+    setContracts([]);
+    setActivePage('dashboard');
+    localStorage.removeItem('nexus_active_page');
   };
 
   const renderPage = () => {
@@ -226,12 +234,13 @@ function App() {
 
     switch (activePage) {
       case 'dashboard':
-        return <Dashboard projects={projects} expenses={expenses} {...commonProps} />;
+        return <Dashboard user={currentUser} projects={projects} expenses={expenses} onNavigate={setActivePage} {...commonProps} />;
       case 'expenses':
         return <Expenses expenses={expenses} projects={projects} {...commonProps} operatorId={currentUser?.id} onRefresh={() => fetchAppData(currentUser.id)} />;
       case 'projects':
         return (
           <Projects
+            user={currentUser}
             projects={projects}
             onUpdateStatus={async (id, status) => {
               await supabase.from('projects').update({ status }).eq('id', id);
@@ -256,6 +265,7 @@ function App() {
             projects={projects}
             onDelete={async (clientName) => {
               await supabase.from('clients').delete().eq('name', clientName);
+              window.dispatchEvent(new CustomEvent('terminal-log', { detail: "[Directory] REMOVED: El cliente fue eliminado correctamente del sistema." }));
               fetchAppData(currentUser.id);
             }}
             userId={currentUser?.id || ''}
@@ -264,7 +274,7 @@ function App() {
           />
         );
       case 'billing': 
-        return <Invoices />;
+        return <Invoices userId={currentUser?.id || ''} />;
       
       case 'contracts':
         return (
@@ -278,7 +288,7 @@ function App() {
       case 'profile':
         return <Profile user={currentUser} onUpdateUser={setCurrentUser} activeProjectsCount={projects.length} onLogout={handleLogout} />;
       default:
-        return <Dashboard projects={projects} expenses={expenses} {...commonProps} />;
+        return <Dashboard user={currentUser} projects={projects} expenses={expenses} onNavigate={setActivePage} {...commonProps} />;
     }
   };
 
