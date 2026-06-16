@@ -17,10 +17,13 @@ interface DashboardProps {
   projects?: any[];
   expenses?: any[];
   onNavigate?: (page: 'dashboard' | 'clients' | 'projects' | 'expenses' | 'profile' | 'billing' | 'contracts') => void;
+  user?: any;
 }
 
-export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dolarRate = 1, dolarLoading = false, dolarError = null, onNavigate }: DashboardProps) {
+export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dolarRate = 1, dolarLoading = false, dolarError = null, onNavigate, user }: DashboardProps) {
   const { t } = useTranslation();
+
+  const displayName = user?.name || user?.email?.split('@')[0] || 'OPERADOR';
 
   const [projectCount, setProjectCount] = useState(0);
   const [totalPaid, setTotalPaid] = useState(0);
@@ -28,10 +31,10 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [realLogs, setRealLogs] = useState<any[]>([]);
   const [logs, setLogs] = useState<string[]>([
-    "[SYS] INIT: Iniciando módulo Emma-Nexus...",
+    `[SYS] INIT: Iniciando módulo ${displayName.toUpperCase()}-Nexus...`,
     "[SYS] STATUS: Sincronización con base de datos Supabase ok.",
-    "[SYS] AUTH: Operador EMMANUEL BUSTOS en línea.",
-    "[SYS] NEXUS_DIVISA: Enlace exitoso. Cotización Dólar Blue sincronizada en tiempo real: $1450"
+    `[SYS] AUTH: Operador ${displayName.toUpperCase()} en línea.`,
+    "[SYS] NEXUS_DIVISA: Enlace exitoso. Cotización Dólar Blue conectada en tiempo real."
   ]);
   const [lineData, setLineData] = useState<any[]>([]);
   

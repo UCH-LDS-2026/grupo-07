@@ -11,6 +11,7 @@ interface ProjectsProps {
   onUpdateProgress: (projectId: number, progress: number) => void;
   onDelete: (projectId: number) => void;
   fetchProjects: () => void;
+  user?: any;
 }
 
 export default function Projects({ 
@@ -19,9 +20,13 @@ export default function Projects({
   onUpdateStatus, 
   onUpdateProgress, 
   onDelete,
-  fetchProjects
+  fetchProjects,
+  user
 }: ProjectsProps) {
   const { t } = useTranslation();
+
+  const displayName = user?.name || user?.email?.split('@')[0] || 'OPERADOR';
+  const dynamicSubtitle = `MÓDULO ${displayName.toUpperCase()}-NEXUS [DB_SYNC_READY]`;
 
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [isEditingProgress, setIsEditingProgress] = useState(false);
@@ -96,7 +101,7 @@ export default function Projects({
             {t('projects.title').split('//')[0]} <span className="text-xl font-bold tracking-wide text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.3)] transition-all duration-300">//{t('projects.title').split('//')[1]}</span>
           </h1>
           <p className="text-xs font-semibold tracking-widest text-gray-400 uppercase mt-1 opacity-80 border-l-2 border-cyan-500 pl-2">
-            {t('projects.subtitle')}
+            {dynamicSubtitle}
           </p>
         </div>
 

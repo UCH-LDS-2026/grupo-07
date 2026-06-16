@@ -116,7 +116,7 @@ function App() {
       const [projectsRes, expensesRes] = await Promise.all([
         supabase
           .from('projects')
-          .select('*')
+          .select('*, clients(name)')
           .eq('user_id', userId)
           .order('created_at', { ascending: false }),
         supabase
@@ -130,7 +130,7 @@ function App() {
         const mappedProjects: Project[] = projectsRes.data.map(p => ({
           id: p.id,
           title: p.title,
-          client: p.client,
+          client: p.clients?.name || p.client, // Automatically resolve name from related clients table
           purpose: p.purpose,
           tech: p.tech || '',
           tags: p.tech ? p.tech.split(',').map((t: string) => t.trim()) : [],
@@ -234,12 +234,13 @@ function App() {
 
     switch (activePage) {
       case 'dashboard':
-        return <Dashboard projects={projects} expenses={expenses} onNavigate={setActivePage} {...commonProps} />;
+        return <Dashboard user={currentUser} projects={projects} expenses={expenses} onNavigate={setActivePage} {...commonProps} />;
       case 'expenses':
         return <Expenses expenses={expenses} projects={projects} {...commonProps} operatorId={currentUser?.id} onRefresh={() => fetchAppData(currentUser.id)} />;
       case 'projects':
         return (
           <Projects
+            user={currentUser}
             projects={projects}
             onUpdateStatus={async (id, status) => {
               await supabase.from('projects').update({ status }).eq('id', id);
@@ -287,7 +288,7 @@ function App() {
       case 'profile':
         return <Profile user={currentUser} onUpdateUser={setCurrentUser} activeProjectsCount={projects.length} onLogout={handleLogout} />;
       default:
-        return <Dashboard projects={projects} expenses={expenses} {...commonProps} />;
+        return <Dashboard user={currentUser} projects={projects} expenses={expenses} onNavigate={setActivePage} {...commonProps} />;
     }
   };
 

@@ -74,7 +74,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
         .insert([
           {
             title: newProject.title,
-            client: newProject.clientName,
+            client: newProject.clientName, // Retained for backwards compatibility if needed
+            client_id: newProject.clientId || null, // Direct UUID assignment
             purpose: newProject.purpose,
             tech: newProject.tech,
             deadline: newProject.deadline || null,
