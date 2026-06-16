@@ -148,7 +148,7 @@ export default function Profile({ user, onUpdateUser, activeProjectsCount, onLog
     const { data, error } = await supabase
       .from('operator_assets')
       .select('*')
-      .eq('operator_id', currentUserId)
+      .eq('user_id', currentUserId)
       .order('created_at', { ascending: true });
 
     if (!error && data) {
@@ -248,7 +248,7 @@ export default function Profile({ user, onUpdateUser, activeProjectsCount, onLog
 
     setLoadingAssets(true);
     const { error } = await supabase.from('operator_assets').insert([{
-      operator_id: currentUserId,
+      user_id: currentUserId,
       name: newAsset.name,
       type: newAsset.type,
       value: newAsset.value

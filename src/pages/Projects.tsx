@@ -11,6 +11,7 @@ interface ProjectsProps {
   onUpdateProgress: (projectId: number, progress: number) => void;
   onDelete: (projectId: number) => void;
   fetchProjects: () => void;
+  user?: any;
 }
 
 export default function Projects({ 
@@ -19,9 +20,13 @@ export default function Projects({
   onUpdateStatus, 
   onUpdateProgress, 
   onDelete,
-  fetchProjects
+  fetchProjects,
+  user
 }: ProjectsProps) {
   const { t } = useTranslation();
+
+  const displayName = user?.name || user?.email?.split('@')[0] || 'OPERADOR';
+  const dynamicSubtitle = `MÓDULO ${displayName.toUpperCase()}-NEXUS [DB_SYNC_READY]`;
 
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [isEditingProgress, setIsEditingProgress] = useState(false);
@@ -86,12 +91,20 @@ export default function Projects({
 
       <div className="scanline-overlay"></div>
       
-      <header className="flex items-center justify-between mb-12 relative z-10 border-b border-white/5 pb-6">
-        <div className="flex items-center gap-4">
-          <h2 className="font-outfit text-white text-xl font-black tracking-tighter transition-colors">NEXUS SGE</h2>
-          <div className="w-[1px] h-4 bg-white/20"></div>
-          <span className="text-primary-container font-space text-[10px] font-bold uppercase tracking-[0.3em]">{t('projects.headerLabel')}</span>
+      <section className="mb-6 select-none animate-fade-in relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/5 pb-6">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-12 h-[1px] bg-primary-container/50"></div>
+            <span className="text-primary-container font-space text-[10px] font-bold uppercase tracking-widest">{t('projects.sectionLabel')}</span>
+          </div>
+          <h1 className="text-2xl font-black tracking-wider text-white uppercase font-sans transition-all duration-300 ease-in-out hover:text-cyan-400 cursor-default">
+            {t('projects.title').split('//')[0]} <span className="text-xl font-bold tracking-wide text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.3)] transition-all duration-300">//{t('projects.title').split('//')[1]}</span>
+          </h1>
+          <p className="text-xs font-semibold tracking-widest text-gray-400 uppercase mt-1 opacity-80 border-l-2 border-cyan-500 pl-2">
+            {dynamicSubtitle}
+          </p>
         </div>
+
         <div className="relative flex items-center">
           <span className="material-symbols-outlined absolute left-3 text-white/30 text-sm">search</span>
           <input
@@ -102,15 +115,6 @@ export default function Projects({
             className="bg-white/[0.03] border border-white/10 rounded-full pl-10 pr-4 py-2 text-white text-[10px] font-space uppercase tracking-widest placeholder:text-white/20 focus:border-cyan-500/50 outline-none w-64 transition-all focus:w-80"
           />
         </div>
-      </header>
-
-      <section className="mb-12 relative z-10">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-12 h-[1px] bg-primary-container/50"></div>
-          <span className="text-primary-container font-space text-[10px] font-bold uppercase tracking-widest">{t('projects.sectionLabel')}</span>
-        </div>
-        <h1 className="text-white font-outfit text-4xl font-extrabold tracking-tighter mb-2 transition-colors">{t('projects.title')}</h1>
-        <p className="text-outline font-space text-[10px] uppercase tracking-[0.2em] transition-colors">{t('projects.subtitle')}</p>
       </section>
 
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20 relative z-10">

@@ -7,4 +7,14 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
+  test: {
+    // Entorno node es suficiente para testear funciones puras async
+    environment: 'node',
+    coverage: {
+      provider: 'v8',
+      // Solo medir cobertura del hook que testeamos
+      include: ['src/hooks/useDolar.ts'],
+      reporter: ['text', 'html'],
+    },
+  },
 });

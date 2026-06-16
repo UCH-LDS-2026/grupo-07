@@ -6,44 +6,85 @@ import { InvoiceModal } from '../components/InvoiceModal';
 import SearchBar from '../components/SearchBar';
 import { jsPDF } from 'jspdf';
 
-export const Invoices = () => {
+export const Invoices = ({ userId }: { userId?: string }) => {
   const { t } = useTranslation();
   const [invoices, setInvoices] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // 1. Fetch Relacional
+  // 1. Fetch Relacional (con garantía de que loading siempre se apaga)
   const fetchInvoices = async () => {
     setLoading(true);
-    
-    const { data, error } = await supabase
-      .from('invoices')
-      .select(`
-        id,
-        invoice_number,
-        amount,
-        status,
-        project_id,
-        client_id,
-        created_at,
-        projects!invoices_project_id_fkey ( title ),
-        clients!invoices_client_id_fkey ( name )
-      `)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('invoices')
+        .select(`
+          id,
+          invoice_number,
+          amount,
+          status,
+          project_id,
+          client_id,
+          contract_id,
+          created_at,
+          projects!invoices_project_id_fkey ( title ),
+          clients!invoices_client_id_fkey ( name )
+        `)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('❌ Error en fetch relacional de facturas:', error.message);
+      if (error) {
+        console.error('❌ Error en fetch relacional de facturas:', error.message);
+        setInvoices([]);
+      } else {
+        setInvoices(data || []);
+      }
+    } catch (err) {
+      console.error('❌ Error inesperado en fetchInvoices:', err);
       setInvoices([]);
-    } else {
-      setInvoices(data || []);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
+    // Si no tenemos userId aún, desactivar loading para no colgar la UI
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
+    // Fetch inicial al montar el componente
     fetchInvoices();
-  }, []);
+
+    // Configurar suscripción a Realtime de Supabase
+    const channel = supabase
+      .channel('invoices-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'invoices' },
+        (payload) => {
+          console.log('⚡ Cambio en facturas detectado en tiempo real:', payload.eventType, payload);
+          if (payload.eventType === 'INSERT') {
+            window.dispatchEvent(new CustomEvent('terminal-log', { detail: "[Invoice] GENERATED: Facturas de pago asociadas y listas para control." }));
+          }
+          // Pequeño delay de seguridad para que Supabase termine de propagar las relaciones
+          setTimeout(() => {
+            fetchInvoices();
+          }, 300);
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Suscrito a eventos en tiempo real para facturas');
+        }
+      });
+
+    // Cleanup de la suscripción al desmontar
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId]);
 
   const toggleInvoiceStatus = async (invoiceId: number, currentStatus: string) => {
     const nextStatus = currentStatus === 'pending' ? 'paid' : 'pending';
@@ -62,7 +103,11 @@ export const Invoices = () => {
     }
   };
 
-  const deleteInvoice = async (invoiceId: number) => {
+  const deleteInvoice = async (invoiceId: number, hasContract: boolean) => {
+    if (hasContract) {
+      alert("Esta factura pertenece a un contrato y no puede eliminarse individualmente. Gestioná el ciclo de vida desde el módulo de Contratos Legales.");
+      return;
+    }
     if (!window.confirm(t('invoices.confirmDelete'))) return;
 
     const { error } = await supabase
@@ -186,13 +231,14 @@ export const Invoices = () => {
   return (
     <div className="p-8 space-y-8 min-h-screen bg-[#05070a] text-white font-space transition-colors duration-500">
       {/* Cabecera */}
-      <div className="flex justify-between items-center border-b border-white/5 pb-6">
+      <div className="mb-6 select-none animate-fade-in flex justify-between items-center border-b border-white/5 pb-6">
         <div>
-          <h2 className="text-white text-3xl font-outfit font-black tracking-tighter uppercase flex items-center gap-3 transition-colors">
-            <FileText className="text-cyan-400" size={32} />
-            {t('invoices.title')}
-          </h2>
-          <p className="text-outline font-space text-[10px] uppercase tracking-[0.2em] mt-2 transition-colors">{t('invoices.subtitle')}</p>
+          <h1 className="text-2xl font-black tracking-wider text-white uppercase font-sans transition-all duration-300 ease-in-out hover:text-cyan-400 cursor-default">
+            {t('invoices.title').split('//')[0]} <span className="text-xl font-bold tracking-wide text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.3)] transition-all duration-300">//{t('invoices.title').split('//')[1]}</span>
+          </h1>
+          <p className="text-xs font-semibold tracking-widest text-gray-400 uppercase mt-1 opacity-80 border-l-2 border-cyan-500 pl-2">
+            {t('invoices.subtitle')}
+          </p>
         </div>
         
         <div className="flex items-center gap-4">
@@ -305,9 +351,14 @@ export const Invoices = () => {
                           <Download size={14} />
                         </button>
                         <button 
-                          onClick={() => deleteInvoice(invoice.id)}
-                          className="w-8 h-8 flex items-center justify-center bg-white/[0.02] border border-white/5 rounded-lg hover:border-red-500/30 text-outline hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
-                          title="Eliminar Factura"
+                          onClick={() => deleteInvoice(invoice.id, !!invoice.contract_id)}
+                          className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
+                            invoice.contract_id 
+                              ? 'bg-white/[0.01] border border-white/5 text-white/20 hover:text-white/20 hover:bg-white/[0.01] hover:border-white/5 cursor-not-allowed'
+                              : 'bg-white/[0.02] border border-white/5 hover:border-red-500/30 text-outline hover:text-red-400 hover:bg-red-500/10'
+                          }`}
+                          title={invoice.contract_id ? "Bloqueado por contrato asociado" : "Eliminar Factura"}
+                          disabled={!!invoice.contract_id}
                         >
                           <Trash2 size={14} />
                         </button>

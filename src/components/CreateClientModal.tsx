@@ -44,7 +44,7 @@ const CreateClientModal: React.FC<CreateClientModalProps> = ({
           company: newClient.company,
           phone: newClient.phone,
           drive_url: newClient.driveUrl, // Mapeado a la columna drive_url de Supabase
-          operator_id: userId,          // Mapeado a la columna operator_id
+          user_id: userId,          // Mapeado a la columna user_id
           status: 'Active'              // Mapeado a la columna status
         }]);
 

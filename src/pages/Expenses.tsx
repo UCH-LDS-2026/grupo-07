@@ -68,7 +68,7 @@ const Expenses = ({ expenses, currency, operatorId, onRefresh }: ExpensesProps) 
           amount: numericAmount,
           category: formData.category,
           date: formData.date,
-          operator_id: operatorId
+          user_id: operatorId
         }]);
 
       if (error) throw error;
@@ -99,12 +99,12 @@ const Expenses = ({ expenses, currency, operatorId, onRefresh }: ExpensesProps) 
   return (
     <div className="p-8 min-h-screen bg-[#05070a] text-white font-space transition-colors duration-500">
       {/* Header */}
-      <div className="flex justify-between items-end mb-10">
+      <div className="mb-6 select-none animate-fade-in flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold tracking-tighter uppercase italic text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500 transition-colors">
-            {t('expenses.title')}
+          <h1 className="text-2xl font-black tracking-wider text-white uppercase font-sans transition-all duration-300 ease-in-out hover:text-cyan-400 cursor-default">
+            {t('expenses.title').split('//')[0]} <span className="text-xl font-bold tracking-wide text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.3)] transition-all duration-300">//{t('expenses.title').split('//')[1]}</span>
           </h1>
-          <p className="text-outline text-[10px] tracking-[0.3em] uppercase mt-1 opacity-50 transition-colors">
+          <p className="text-xs font-semibold tracking-widest text-gray-400 uppercase mt-1 opacity-80 border-l-2 border-cyan-500 pl-2">
             {t('expenses.subtitle')}
           </p>
         </div>

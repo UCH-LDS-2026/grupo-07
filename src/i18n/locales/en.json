@@ -11,12 +11,12 @@
     "labels": {
       "operativeCurrency": "OPERATIVE CURRENCY",
       "startProject": "+ START PROJECT",
-      "operativeOs": "OPERATIONAL OS"
+      "operativeOs": "OPERATIVE OS"
     }
   },
   "dashboard": {
-    "title": "Nexus_Dashboard",
-    "subtitle": "Active Operational Module",
+    "title": "COMMAND CENTER // ACTIVE OPERATIONAL MODULE",
+    "subtitle": "CENTRAL COMMAND SYSTEM",
     "kpi": {
       "projects": "Active Projects",
       "income": "Historical Revenue",
@@ -69,7 +69,7 @@
   },
   "clients": {
     "title": "DIRECTORY // RELATIONS",
-    "subtitle": "Strategic Client Management Module [NEXUS_DB]",
+    "subtitle": "STRATEGIC CLIENT MANAGEMENT MODULE",
     "newClient": "NEW CLIENT",
     "terminal": "Client Data Terminal",
     "kpis": {
@@ -89,8 +89,8 @@
     "noEntities": "No registered entities"
   },
   "projects": {
-    "title": "TERMINAL MANAGEMENT",
-    "subtitle": "Emma-Nexus Module [DB_SYNC_READY]",
+    "title": "MANAGEMENT // TERMINAL",
+    "subtitle": "EMMA-NEXUS MODULE [DB_SYNC_READY]",
     "headerLabel": "Operational Terminal",
     "sectionLabel": "Client & Project Assets",
     "searchPlaceholder": "SEARCH PROJECT...",
@@ -105,8 +105,8 @@
     "confirmDelete": "Permanently delete"
   },
   "contracts": {
-    "title": "Legal Contracts",
-    "subtitle": "Automated Generation",
+    "title": "LEGAL // CONTRACTS",
+    "subtitle": "AUTOMATED DOCUMENT GENERATION",
     "headerLabel": "Legal System",
     "sync": "Sync",
     "structureContract": "Structure Contract",
@@ -133,8 +133,8 @@
     "confirmDelete": "Are you sure you want to terminate and permanently delete this contract?"
   },
   "invoices": {
-    "title": "Invoices",
-    "subtitle": "Payment management and control",
+    "title": "INVOICES // PAYMENT CONTROL",
+    "subtitle": "BILLING MANAGEMENT AND ADMINISTRATION",
     "sync": "Sync",
     "loading": "Syncing Database...",
     "empty": "No invoices registered in the system.",
@@ -153,8 +153,8 @@
     }
   },
   "expenses": {
-    "title": "Nexus_Expenses",
-    "subtitle": "Cash Flow Management",
+    "title": "FINANCES // CASH FLOW",
+    "subtitle": "EXPENSE AND OPERATIONAL CAPITAL MANAGEMENT",
     "searchPlaceholder": "SEARCH EXPENSE...",
     "newExpense": "New Expense",
     "cancel": "Cancel",
@@ -248,7 +248,14 @@
     "cancel": "Cancel",
     "save": "Save",
     "delete": "Delete",
+    "edit": "Edit",
     "copied": "Copied!",
     "searchEntity": "SEARCH ENTITY..."
+  },
+  "finance": {
+    "buy": "BUY:",
+    "sell": "SELL:",
+    "marketBlue": "BLUE MARKET",
+    "syncing": "Syncing..."
   }
 }
