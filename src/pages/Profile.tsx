@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
-import { Copy, Check, Trash2, Plus, Github, Linkedin, Instagram } from 'lucide-react';
+import { Copy, Check, Trash2, Plus, Github, Linkedin, Instagram, Link as LinkIcon } from 'lucide-react';
 import LanguageSelector from '../components/LanguageSelector';
 
 interface ProfileProps {
@@ -68,19 +68,67 @@ const AssetCard = ({ asset, onDelete }: { asset: any, onDelete: (id: string) => 
   );
 };
 
+const extractUsername = (value: string, urlBase: string): string => {
+  if (!value) return '';
+  let cleaned = value.trim();
+  try {
+    const url = new URL(cleaned);
+    const parts = url.pathname.replace(/^\/+/, '').replace(/\/+$/, '').split('/');
+    return parts[parts.length - 1] || cleaned;
+  } catch {
+    if (cleaned.startsWith('https://') || cleaned.startsWith('http://')) {
+      cleaned = cleaned.replace(/^https?:\/\//, '');
+    }
+    const domain = urlBase.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    if (cleaned.startsWith(domain)) {
+      cleaned = cleaned.slice(domain.length).replace(/^\//, '');
+    }
+    return cleaned.replace(/\/+$/, '');
+  }
+};
+
+const ICON_MAP: Record<string, any> = {
+  github: Github,
+  linkedin: Linkedin,
+  instagram: Instagram,
+  link: LinkIcon
+};
+
 // Subcomponente Universal de Redes con Copiado
-const NetworkCard = ({ icon: Icon, name, urlBase, username, colorClass }: { icon: any, name: string, urlBase: string, username?: string, colorClass: string }) => {
+const NetworkCard = ({ icon: Icon, name, urlBase, username, colorClass, onDelete }: { icon: any, name: string, urlBase: string, username?: string, colorClass: string, onDelete?: () => void }) => {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = () => {
-    if (!username) return;
-    navigator.clipboard.writeText(`${urlBase}${username}`);
+  let finalUrl = '';
+  let displayText = '';
+  let isEmpty = false;
+
+  if (urlBase) {
+    const cleanUsername = extractUsername(username || '', urlBase);
+    if (!cleanUsername) isEmpty = true;
+    else {
+      finalUrl = `${urlBase}${cleanUsername}`;
+      displayText = `${urlBase.replace('https://', '')}${cleanUsername}`;
+    }
+  } else {
+    const rawUrl = (username || '').trim();
+    if (!rawUrl) isEmpty = true;
+    else {
+      finalUrl = (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://')) ? `https://${rawUrl}` : rawUrl;
+      displayText = rawUrl.replace(/^https?:\/\//, '');
+    }
+  }
+
+  const handleCopy = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    if (!finalUrl) return;
+    navigator.clipboard.writeText(finalUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (!username) {
+
+  if (isEmpty) {
     return (
       <div className="p-4 rounded-xl bg-white/[0.01] border border-white/5 flex items-center justify-between opacity-40 cursor-not-allowed transition-colors">
         <div className="flex items-center gap-3">
@@ -100,18 +148,29 @@ const NetworkCard = ({ icon: Icon, name, urlBase, username, colorClass }: { icon
         <div className="opacity-80 group-hover:opacity-100 transition-opacity"><Icon size={20} /></div>
         <div className="overflow-hidden w-full">
           <p className="text-[10px] font-space font-bold uppercase tracking-widest mb-1 truncate">{name}</p>
-          <a href={`${urlBase}${username}`} target="_blank" rel="noreferrer" className="text-white/70 hover:text-white font-mono text-xs tracking-wider truncate block transition-colors">
-            {urlBase.replace('https://', '')}{username}
+          <a href={finalUrl} target="_blank" rel="noreferrer" className="text-white/70 hover:text-white font-mono text-xs tracking-wider truncate block transition-colors">
+            {displayText}
           </a>
         </div>
       </div>
-      <button 
-        onClick={handleCopy}
-        className="shrink-0 w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 hover:scale-105 active:scale-95 transition-all group-hover:shadow-[0_0_15px_rgba(255,255,255,0.1)]"
-        title={t('profile.networks.copyLink')}
-      >
-        {copied ? <Check size={18} className="text-green-400" /> : <Copy size={18} />}
-      </button>
+      <div className="flex gap-2">
+        <button 
+          onClick={handleCopy}
+          className="shrink-0 w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 hover:scale-105 active:scale-95 transition-all group-hover:shadow-[0_0_15px_rgba(255,255,255,0.1)]"
+          title={t('profile.networks.copyLink')}
+        >
+          {copied ? <Check size={18} className="text-green-400" /> : <Copy size={18} />}
+        </button>
+        {onDelete && (
+          <button 
+            onClick={(e) => { e.preventDefault(); onDelete(); }}
+            className="shrink-0 w-10 h-10 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center hover:bg-red-500/20 hover:scale-105 active:scale-95 transition-all"
+            title="Eliminar red"
+          >
+            <Trash2 size={18} />
+          </button>
+        )}
+      </div>
     </div>
   );
 };
@@ -124,7 +183,14 @@ export default function Profile({ user, onUpdateUser, activeProjectsCount, onLog
   const [error, setError] = useState('');
 
   // TABS STATE
-  const [activeTab, setActiveTab] = useState<'wallets' | 'networks'>('wallets');
+  const [activeTab, setActiveTab] = useState<'wallets' | 'networks'>(() => {
+    return (localStorage.getItem('profile_tab') as 'wallets' | 'networks') || 'wallets';
+  });
+
+  const handleTabChange = (tab: 'wallets' | 'networks') => {
+    setActiveTab(tab);
+    localStorage.setItem('profile_tab', tab);
+  };
 
   // Estados de cuentas/wallets
   const [assets, setAssets] = useState<any[]>([]);
@@ -133,6 +199,12 @@ export default function Profile({ user, onUpdateUser, activeProjectsCount, onLog
   // Estado para modal de nueva cuenta
   const [isAddingAsset, setIsAddingAsset] = useState(false);
   const [newAsset, setNewAsset] = useState({ name: '', type: '', value: '' });
+
+  // Estados de redes dinámicas
+  const [links, setLinks] = useState<any[]>([]);
+  const [loadingLinks, setLoadingLinks] = useState(true);
+  const [isEditingNetworks, setIsEditingNetworks] = useState(false);
+  const [newLink, setNewLink] = useState({ title: '', url: '', icon: 'link' });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -148,7 +220,7 @@ export default function Profile({ user, onUpdateUser, activeProjectsCount, onLog
     const { data, error } = await supabase
       .from('operator_assets')
       .select('*')
-      .eq('user_id', currentUserId)
+      .eq('operator_id', currentUserId)
       .order('created_at', { ascending: true });
 
     if (!error && data) {
@@ -157,8 +229,30 @@ export default function Profile({ user, onUpdateUser, activeProjectsCount, onLog
     setLoadingAssets(false);
   };
 
+  const fetchLinks = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const currentUserId = session?.user?.id;
+
+    if (!currentUserId) {
+      setLoadingLinks(false);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('operator_links')
+      .select('*')
+      .eq('operator_id', currentUserId)
+      .order('created_at', { ascending: true });
+
+    if (!error && data) {
+      setLinks(data);
+    }
+    setLoadingLinks(false);
+  };
+
   useEffect(() => {
     fetchAssets();
+    fetchLinks();
   }, []);
 
   const getInitials = (name: string) => {
@@ -177,7 +271,8 @@ export default function Profile({ user, onUpdateUser, activeProjectsCount, onLog
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) e.preventDefault();
     const { data: { session } } = await supabase.auth.getSession();
     const currentUserId = session?.user?.id;
 
@@ -239,7 +334,8 @@ export default function Profile({ user, onUpdateUser, activeProjectsCount, onLog
     setError('');
   };
 
-  const handleAddAsset = async () => {
+  const handleAddAsset = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) e.preventDefault();
     if (!newAsset.name || !newAsset.type || !newAsset.value) return;
 
     const { data: { session } } = await supabase.auth.getSession();
@@ -248,7 +344,7 @@ export default function Profile({ user, onUpdateUser, activeProjectsCount, onLog
 
     setLoadingAssets(true);
     const { error } = await supabase.from('operator_assets').insert([{
-      user_id: currentUserId,
+      operator_id: currentUserId,
       name: newAsset.name,
       type: newAsset.type,
       value: newAsset.value
@@ -264,12 +360,48 @@ export default function Profile({ user, onUpdateUser, activeProjectsCount, onLog
     }
   };
 
-  const handleDeleteAsset = async (id: string) => {
+  const handleDeleteAsset = async (id: string, e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
     const { error } = await supabase.from('operator_assets').delete().eq('id', id);
     if (!error) {
       setAssets(assets.filter(a => a.id !== id));
     } else {
       console.error("Error deleting asset:", error);
+    }
+  };
+
+  const handleAddLink = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) e.preventDefault();
+    if (!newLink.title || !newLink.url) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const currentUserId = session?.user?.id;
+    if (!currentUserId) return;
+
+    setLoadingLinks(true);
+    const { error } = await supabase.from('operator_links').insert([{
+      operator_id: currentUserId,
+      title: newLink.title,
+      url: newLink.url,
+      icon: newLink.icon
+    }]);
+
+    if (!error) {
+      setNewLink({ title: '', url: '', icon: 'link' });
+      await fetchLinks();
+    } else {
+      console.error("Error adding link:", error);
+      setLoadingLinks(false);
+    }
+  };
+
+  const handleDeleteLink = async (id: string, e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    const { error } = await supabase.from('operator_links').delete().eq('id', id);
+    if (!error) {
+      setLinks(links.filter(l => l.id !== id));
+    } else {
+      console.error("Error deleting link:", error);
     }
   };
 
@@ -302,7 +434,7 @@ export default function Profile({ user, onUpdateUser, activeProjectsCount, onLog
           <div className="glass-card p-8 border-primary-container/20 flex flex-col items-center text-center relative overflow-hidden rounded-2xl shadow-sm transition-colors">
              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary-container to-secondary-container"></div>
              <div 
-               onClick={() => setIsEditing(true)}
+               onClick={(e) => { e.preventDefault(); setIsEditing(true); }}
                className="w-40 h-40 rounded-full border-2 border-primary-container/30 p-1.5 mb-6 relative group cursor-pointer"
              >
                <div className="absolute inset-0 bg-primary-container/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -325,7 +457,7 @@ export default function Profile({ user, onUpdateUser, activeProjectsCount, onLog
              <p className="text-primary-container font-space text-[10px] font-bold uppercase tracking-widest mb-6 transition-colors">{user.role}</p>
              
              <button 
-               onClick={() => setIsEditing(true)}
+               onClick={(e) => { e.preventDefault(); setIsEditing(true); }}
                className="w-full py-3 rounded-xl bg-primary-container/10 border border-primary-container/20 text-primary-container font-space text-[10px] font-bold uppercase tracking-widest hover:bg-primary-container/20 transition-all active:scale-[0.98] mb-6"
              >
                {t('profile.bio.editProfile')}
@@ -346,7 +478,7 @@ export default function Profile({ user, onUpdateUser, activeProjectsCount, onLog
                 </div>
 
                 <button 
-                  onClick={onLogout}
+                  onClick={(e) => { e.preventDefault(); onLogout(); }}
                   className="w-full mt-6 py-3 rounded-xl border border-red-500/30 bg-red-500/5 text-red-500 font-space text-[10px] font-bold uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                 >
                   <span className="material-symbols-outlined text-sm">logout</span>
@@ -383,7 +515,7 @@ export default function Profile({ user, onUpdateUser, activeProjectsCount, onLog
             {/* Tabs Header */}
             <div className="flex border-b border-white/5 bg-white/[0.01]">
               <button
-                onClick={() => setActiveTab('wallets')}
+                onClick={(e) => { e.preventDefault(); handleTabChange('wallets'); }}
                 className={`flex-1 py-4 text-[10px] font-space font-bold uppercase tracking-widest transition-all ${
                   activeTab === 'wallets' 
                     ? 'text-cyan-400 border-b-2 border-cyan-400 bg-cyan-400/5' 
@@ -393,7 +525,7 @@ export default function Profile({ user, onUpdateUser, activeProjectsCount, onLog
                 {t('profile.tabs.wallets')}
               </button>
               <button
-                onClick={() => setActiveTab('networks')}
+                onClick={(e) => { e.preventDefault(); handleTabChange('networks'); }}
                 className={`flex-1 py-4 text-[10px] font-space font-bold uppercase tracking-widest transition-all ${
                   activeTab === 'networks' 
                     ? 'text-purple-400 border-b-2 border-purple-400 bg-purple-400/5' 
@@ -415,7 +547,7 @@ export default function Profile({ user, onUpdateUser, activeProjectsCount, onLog
                   
                   {!isAddingAsset && (
                     <button 
-                      onClick={() => setIsAddingAsset(true)}
+                      onClick={(e) => { e.preventDefault(); setIsAddingAsset(true); }}
                       className="flex items-center gap-2 py-2 px-4 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-space text-[9px] font-bold uppercase tracking-widest hover:bg-cyan-500/20 hover:scale-105 transition-all"
                     >
                       <Plus size={14} /> {t('profile.wallets.addCredential')}
@@ -451,7 +583,7 @@ export default function Profile({ user, onUpdateUser, activeProjectsCount, onLog
                     </div>
                     <div className="flex gap-3 justify-end">
                       <button 
-                        onClick={() => setIsAddingAsset(false)}
+                        onClick={(e) => { e.preventDefault(); setIsAddingAsset(false); }}
                         className="py-2 px-4 rounded-lg border border-white/10 text-white/50 text-[10px] uppercase font-space tracking-widest hover:bg-white/5 hover:text-white transition-all"
                       >
                         {t('profile.wallets.cancel')}
@@ -481,7 +613,7 @@ export default function Profile({ user, onUpdateUser, activeProjectsCount, onLog
                       </div>
                       {!isAddingAsset && (
                         <button 
-                          onClick={() => setIsAddingAsset(true)}
+                          onClick={(e) => { e.preventDefault(); setIsAddingAsset(true); }}
                           className="py-3 px-8 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-space text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-cyan-500 hover:text-[#05070a] hover:shadow-[0_0_20px_rgba(0,240,255,0.4)] transition-all mt-4"
                         >
                           {t('profile.wallets.addFirst')}
@@ -508,35 +640,44 @@ export default function Profile({ user, onUpdateUser, activeProjectsCount, onLog
                     {t('profile.networks.title')}
                   </h3>
                   <button 
-                    onClick={() => setIsEditing(true)}
+                    onClick={(e) => { e.preventDefault(); setIsEditingNetworks(true); }}
                     className="flex items-center gap-2 py-2 px-4 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20 font-space text-[9px] font-bold uppercase tracking-widest hover:bg-purple-500/20 hover:scale-105 transition-all"
                   >
                     <span className="material-symbols-outlined text-[14px]">edit</span> {t('profile.networks.configure')}
                   </button>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <NetworkCard 
-                    icon={Github} 
-                    name="GitHub Protocol" 
-                    urlBase="https://github.com/" 
-                    username={user.github_user}
-                    colorClass="hover:border-white/40 text-white"
-                  />
-                  <NetworkCard 
-                    icon={Linkedin} 
-                    name="LinkedIn Sync" 
-                    urlBase="https://linkedin.com/in/" 
-                    username={user.linkedin_user}
-                    colorClass="hover:border-blue-500/40 text-blue-400"
-                  />
-                  <NetworkCard 
-                    icon={Instagram} 
-                    name="Instagram Connect" 
-                    urlBase="https://instagram.com/" 
-                    username={user.instagram_user}
-                    colorClass="hover:border-pink-500/40 text-pink-400"
-                  />
+                <div className="flex-1">
+                  {loadingLinks ? (
+                    <div className="h-full w-full flex items-center justify-center p-12">
+                      <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  ) : links.length === 0 ? (
+                    <div className="p-12 text-center bg-white/[0.01] border border-white/5 rounded-2xl border-dashed h-full flex flex-col items-center justify-center gap-6">
+                      <span className="material-symbols-outlined text-white/20 text-5xl">hub</span>
+                      <div>
+                        <p className="text-white font-bold tracking-widest uppercase text-sm mb-2">{t('profile.networks.empty', 'SIN REDES')}</p>
+                        <p className="text-outline font-space text-[10px] uppercase tracking-widest max-w-sm mx-auto">{'No has configurado ningún perfil digital. Toca configurar redes para empezar.'}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {links.map((link) => {
+                        const IconComponent = ICON_MAP[link.icon] || ICON_MAP['link'];
+                        return (
+                          <NetworkCard 
+                            key={link.id}
+                            icon={IconComponent} 
+                            name={link.title} 
+                            urlBase="" 
+                            username={link.url}
+                            colorClass="hover:border-purple-500/40 text-purple-400"
+                            onDelete={() => handleDeleteLink(link.id)}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -546,10 +687,115 @@ export default function Profile({ user, onUpdateUser, activeProjectsCount, onLog
         </div>
       </section>
 
+      {/* Edit Networks Modal */}
+      {isEditingNetworks && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={(e) => { e.preventDefault(); setIsEditingNetworks(false); }}></div>
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar glass-card relative z-10 animate-in zoom-in-95 duration-300 p-8 border-white/10">
+            <h3 className="text-white font-outfit text-2xl font-black mb-8 uppercase tracking-tighter flex items-center gap-3">
+              <span className="material-symbols-outlined text-purple-400">hub</span> 
+              Configurar Redes
+            </h3>
+            
+            <form onSubmit={(e) => { e.preventDefault(); handleAddLink(e); }} className="space-y-6">
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-bold text-purple-400 uppercase tracking-widest border-b border-white/10 pb-2">Agregar Nueva Red</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-outline font-space text-[9px] uppercase tracking-widest ml-1">Título (ej: Mi Portfolio)</label>
+                    <input 
+                      type="text" 
+                      className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-purple-500 transition-all font-mono"
+                      value={newLink.title}
+                      onChange={(e) => setNewLink({ ...newLink, title: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-outline font-space text-[9px] uppercase tracking-widest ml-1">URL / Enlace</label>
+                    <input 
+                      type="text" 
+                      className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-purple-500 transition-all font-mono"
+                      value={newLink.url}
+                      onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-outline font-space text-[9px] uppercase tracking-widest ml-1">Ícono</label>
+                    <div className="flex gap-4">
+                      {['github', 'linkedin', 'instagram', 'link'].map(iconName => (
+                        <button
+                          key={iconName}
+                          type="button"
+                          onClick={(e) => { e.preventDefault(); setNewLink({ ...newLink, icon: iconName }); }}
+                          className={`p-3 rounded-xl border ${newLink.icon === iconName ? 'bg-purple-500/20 border-purple-500 text-purple-400' : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'} transition-all`}
+                        >
+                          {React.createElement(ICON_MAP[iconName] || ICON_MAP['link'], { size: 20 })}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex gap-4 pt-4">
+                  <button 
+                    type="submit"
+                    disabled={!newLink.title || !newLink.url}
+                    className="flex-1 py-4 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30 font-space text-[10px] font-bold uppercase tracking-widest hover:bg-purple-500 hover:text-[#05070a] transition-all disabled:opacity-50"
+                  >
+                    Guardar Red
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-6 border-t border-white/5">
+                <h4 className="text-[10px] font-bold text-outline uppercase tracking-widest">Redes Actuales</h4>
+                {links.length === 0 ? (
+                  <p className="text-[10px] font-space text-white/40 uppercase tracking-widest">No hay redes configuradas</p>
+                ) : (
+                  <div className="space-y-3">
+                    {links.map(link => {
+                      const IconComp = ICON_MAP[link.icon] || ICON_MAP['link'];
+                      return (
+                        <div key={link.id} className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10">
+                          <div className="flex items-center gap-3">
+                            <IconComp size={16} className="text-white/50" />
+                            <div>
+                              <p className="text-[10px] font-space font-bold uppercase tracking-widest">{link.title}</p>
+                              <p className="text-[9px] font-mono text-white/50">{link.url}</p>
+                            </div>
+                          </div>
+                          <button 
+                            type="button"
+                            onClick={(e) => handleDeleteLink(link.id, e)}
+                            className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex pt-6 mt-4 border-t border-white/5">
+                <button 
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); setIsEditingNetworks(false); }}
+                  className="w-full py-4 rounded-xl border border-white/10 text-white font-space text-[10px] font-bold uppercase tracking-widest hover:bg-white/5 transition-all"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Edit Profile Modal */}
       {isEditing && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setIsEditing(false)}></div>
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={(e) => { e.preventDefault(); setIsEditing(false); }}></div>
           <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar glass-card relative z-10 animate-in zoom-in-95 duration-300 p-8 border-white/10">
             <h3 className="text-white font-outfit text-2xl font-black mb-8 uppercase tracking-tighter">{t('profile.modal.title')}</h3>
             
@@ -623,47 +869,9 @@ export default function Profile({ user, onUpdateUser, activeProjectsCount, onLog
                   </div>
                 </div>
 
-                {/* Redes y Seguridad */}
+                {/* Seguridad */}
                 <div className="space-y-4">
-                  <h4 className="text-[10px] font-bold text-purple-400 uppercase tracking-widest border-b border-white/10 pb-2">{t('profile.modal.neuralNetworks')}</h4>
-                  <div className="space-y-2">
-                    <label className="text-outline font-space text-[9px] uppercase tracking-widest ml-1 flex items-center gap-2">
-                      <span className="text-[12px]"><Github size={12} /></span> {t('profile.modal.githubUser')}
-                    </label>
-                    <input 
-                      type="text" 
-                      placeholder="ej: octocat"
-                      className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-purple-500 transition-all font-mono"
-                      value={editData.github_user || ''}
-                      onChange={(e) => setEditData({ ...editData, github_user: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-outline font-space text-[9px] uppercase tracking-widest ml-1 flex items-center gap-2">
-                      <span className="text-[12px]"><Linkedin size={12} /></span> {t('profile.modal.linkedinUser')}
-                    </label>
-                    <input 
-                      type="text" 
-                      placeholder="ej: john-doe"
-                      className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-purple-500 transition-all font-mono"
-                      value={editData.linkedin_user || ''}
-                      onChange={(e) => setEditData({ ...editData, linkedin_user: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-outline font-space text-[9px] uppercase tracking-widest ml-1 flex items-center gap-2">
-                      <span className="text-[12px]"><Instagram size={12} /></span> {t('profile.modal.instagramUser')}
-                    </label>
-                    <input 
-                      type="text" 
-                      placeholder="ej: thejohndoe"
-                      className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-purple-500 transition-all font-mono"
-                      value={editData.instagram_user || ''}
-                      onChange={(e) => setEditData({ ...editData, instagram_user: e.target.value })}
-                    />
-                  </div>
-
-                  <h4 className="text-[10px] font-bold text-red-400 uppercase tracking-widest border-b border-white/10 pb-2 mt-6">{t('profile.modal.accessCredentials')}</h4>
+                  <h4 className="text-[10px] font-bold text-red-400 uppercase tracking-widest border-b border-white/10 pb-2 mt-0">{t('profile.modal.accessCredentials')}</h4>
                   <div className="space-y-2">
                     <label className="text-outline font-space text-[9px] uppercase tracking-widest ml-1">{t('profile.modal.newPassword')}</label>
                     <input 
@@ -697,7 +905,8 @@ export default function Profile({ user, onUpdateUser, activeProjectsCount, onLog
 
               <div className="flex gap-4 pt-6 mt-4 border-t border-white/5">
                 <button 
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
                     setIsEditing(false);
                     setError('');
                     setCurrentPasswordInput('');
@@ -707,7 +916,7 @@ export default function Profile({ user, onUpdateUser, activeProjectsCount, onLog
                   {t('profile.modal.cancel')}
                 </button>
                 <button 
-                  onClick={handleSave}
+                  onClick={(e) => handleSave(e)}
                   className="flex-1 py-4 rounded-xl bg-primary-container text-on-primary font-space text-[10px] font-bold uppercase tracking-widest hover:brightness-110 transition-all shadow-lg shadow-primary-container/20"
                 >
                   {t('profile.modal.confirm')}
