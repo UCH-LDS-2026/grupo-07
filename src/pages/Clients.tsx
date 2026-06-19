@@ -70,27 +70,16 @@ export default function Clients({
       </header>
 
       {/* KPI Grid */}
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 relative z-10">
+      <section className="w-full mb-12 relative z-10">
         <div className="border-white/5 glass-card p-6 border-l-4 border-l-primary-container hover:bg-white/[0.03] transition-colors cursor-default rounded-2xl shadow-sm">
           <div className="flex justify-between items-start mb-4">
             <span className="text-outline font-space text-[10px] uppercase tracking-widest transition-colors">{t('clients.kpis.activeClients')}</span>
             <span className="material-symbols-outlined text-primary-container">person_check</span>
           </div>
           <div className="text-3xl font-bold text-white font-outfit transition-colors">
-            {clients.filter(c => c.status === 'Active').length}
+            {clients.length}
           </div>
           <div className="text-[10px] font-space text-primary-container mt-1 font-bold">{t('clients.kpis.operativeEntities')}</div>
-        </div>
-
-        <div className="border-white/5 glass-card p-6 border-l-4 border-l-outline hover:bg-white/[0.03] transition-colors cursor-default rounded-2xl shadow-sm">
-          <div className="flex justify-between items-start mb-4">
-            <span className="text-outline font-space text-[10px] uppercase tracking-widest transition-colors">{t('clients.kpis.inactiveClients')}</span>
-            <span className="material-symbols-outlined text-outline">person_off</span>
-          </div>
-          <div className="text-3xl font-bold text-white font-outfit transition-colors">
-            {clients.filter(c => c.status !== 'Active').length}
-          </div>
-          <div className="text-[10px] font-space text-outline mt-1 font-bold">{t('clients.kpis.offlineEntities')}</div>
         </div>
       </section>
 
