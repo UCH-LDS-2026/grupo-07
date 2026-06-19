@@ -12,6 +12,8 @@ interface ProjectsProps {
   onDelete: (projectId: number) => void;
   fetchProjects: () => void;
   user?: any;
+  currencyCode?: string;
+  dolarRate?: number;
 }
 
 export default function Projects({ 
@@ -21,7 +23,9 @@ export default function Projects({
   onUpdateProgress, 
   onDelete,
   fetchProjects,
-  user
+  user,
+  currencyCode = 'ARS',
+  dolarRate = 1480
 }: ProjectsProps) {
   const { t } = useTranslation();
 
@@ -155,7 +159,21 @@ export default function Projects({
             </div>
 
             <div className="flex justify-between items-center pt-6 border-t border-white/5">
-              <p className="text-white font-bold font-outfit text-lg transition-colors">{currency}{project.budget.toLocaleString()}</p>
+              <p className="text-white font-bold font-outfit text-lg transition-colors">
+                {currency}
+                {(() => {
+                  const rawAmount = project.budget; // Base siempre en USD
+                  const appCurr = currencyCode; // 'USD' o 'ARS'
+
+                  if (appCurr === 'USD') {
+                    // Si la app está en USD, mostramos el valor directo de la BD
+                    return rawAmount.toLocaleString('es-AR', { maximumFractionDigits: 0 });
+                  } else {
+                    // Si la app está en ARS, multiplicamos por la cotización
+                    return (rawAmount * dolarRate).toLocaleString('es-AR', { maximumFractionDigits: 0 });
+                  }
+                })()}
+              </p>
               <span className="text-primary-container text-[10px] font-bold font-space group-hover:translate-x-1 transition-transform flex items-center gap-1">
                 {t('projects.details')} <span className="material-symbols-outlined text-xs">chevron_right</span>
               </span>

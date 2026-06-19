@@ -14,13 +14,11 @@ export interface Project {
   id: number;
   title: string;
 
-  // Soporte para componentes antiguos (Dashboard) que buscan project.client
+
   client?: string;
 
-  // Relación técnica con la base de datos
   client_id: number;
 
-  // Datos descriptivos
   status: 'ACTIVE' | 'PAUSED' | 'FINISHED' | string;
   icon: string;
   description?: string;
@@ -34,6 +32,7 @@ export interface Project {
 
   budget: number;
   paid: number;
+  currency?: string;
   tax_rate?: number;
 
   gitRepo?: string;
