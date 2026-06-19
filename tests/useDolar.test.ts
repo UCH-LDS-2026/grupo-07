@@ -65,7 +65,6 @@ describe('Pruebas unitarias para useDolar (fetchDolarData)', () => {
 
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network Error')));
 
-    // 2. Act + Assert
     await expect(fetchDolarData()).rejects.toThrow('Network Error');
   });
 

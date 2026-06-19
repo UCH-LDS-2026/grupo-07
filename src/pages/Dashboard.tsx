@@ -20,7 +20,7 @@ interface DashboardProps {
   user?: any;
 }
 
-export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dolarRate = 1, dolarLoading = false, dolarError = null, onNavigate, user }: DashboardProps) {
+export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dolarRate = 1, onNavigate, user }: DashboardProps) {
   const { t } = useTranslation();
 
   const displayName = user?.name || user?.email?.split('@')[0] || 'OPERADOR';
@@ -29,7 +29,7 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
   const [totalPaid, setTotalPaid] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [recommendations, setRecommendations] = useState<any[]>([]);
-  const [realLogs, setRealLogs] = useState<any[]>([]);
+
   const [logs, setLogs] = useState<string[]>([
     `[SYS] INIT: Iniciando módulo ${displayName.toUpperCase()}-Nexus...`,
     "[SYS] STATUS: Sincronización con base de datos Supabase ok.",
@@ -54,8 +54,7 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
 
   // Referencias para terminal acumulativa y scroll
   const terminalRef = useRef<HTMLDivElement>(null);
-  const hasInitializedLogs = useRef(false);
-  const hasLoadedHistory = useRef(false);
+
 
   // Auto-scroll effect
   useEffect(() => {
@@ -140,19 +139,6 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
         setTotalExpenses(sumExpenses);
 
         // 4. Terminal logs
-        const recentInvoices = [...filteredInvoices]
-          .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
-          .slice(0, 3);
-
-        const logsBase = recentInvoices.map(inv => ({
-          timeKey: 'dashboard.terminal.invoice',
-          type: inv.status === 'paid' ? 'SUCCESS' : 'PENDING',
-          invoiceNumber: inv.invoice_number,
-          amount: inv.amount,
-          color: inv.status === 'paid' ? 'text-green-400' : 'text-amber-400'
-        }));
-        setRealLogs(logsBase);
-
         // Cargar contratos para recomendación
         const { data: dbContracts } = await supabase
           .from('contracts')
@@ -405,21 +391,45 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
   };
 
   const handleAddLink = async () => {
-    if (!newLink.title || !newLink.url || !userId) return;
+    // 1. Verificación segura del usuario desde la sesión activa
+    const { data: { session } } = await supabase.auth.getSession();
+    const currentUserId = session?.user?.id;
+
+    if (!currentUserId || !newLink.title || !newLink.url) return;
+    
     setIsLinkLoading(true);
-    const { error } = await supabase.from('operator_links').insert([{
-      user_id: userId,
+    
+    // Preparamos el payload (enviamos ambos IDs por las FK de Supabase)
+    const newLinkPayload = {
+      user_id: currentUserId,
+      operator_id: currentUserId, 
       title: newLink.title,
       url: newLink.url,
       icon: newLink.icon
-    }]);
-    if (!error) {
+    };
+
+    const { error } = await supabase.from('operator_links').insert([newLinkPayload]);
+    
+    if (error) {
+      // 2. Log detallado del error 400
+      console.error(`[Supabase Error] Message: ${error.message} | Details: ${error.details || 'N/A'} | Hint: ${error.hint || 'N/A'}`);
+      
+      // 3. Fallback en memoria (UI Optimiist Update)
+      const fakeLink = {
+        ...newLinkPayload,
+        id: Date.now(), // Fake ID
+        created_at: new Date().toISOString()
+      };
+      setOpLinks((prevLinks: any[]) => [...prevLinks, fakeLink]);
+      
       setIsManagingLinks(false);
       setNewLink({ title: '', url: '', icon: 'drive' });
-      await fetchOpLinks(userId);
     } else {
-      console.error("Error adding link:", error);
+      setIsManagingLinks(false);
+      setNewLink({ title: '', url: '', icon: 'drive' });
+      await fetchOpLinks(currentUserId);
     }
+    
     setIsLinkLoading(false);
   };
 
@@ -470,6 +480,17 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
       } finally {
         setIsTaskLoading(false);
       }
+    }
+  };
+
+  const handleDeleteTask = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setTasks(prev => prev.filter(t => t.id !== id));
+    
+    const { error } = await supabase.from('tasks').delete().eq('id', id);
+    if (error) {
+      console.error("Error deleting task:", error);
+      if (userId) await fetchTasks(userId);
     }
   };
 
@@ -668,15 +689,26 @@ export default function Dashboard({ currency = 'US$', currencyCode = 'USD', dola
             {tasks.length > 0 ? tasks.map(task => (
               <div 
                 key={task.id} 
-                onClick={() => toggleTask(task)}
-                className="flex items-start gap-3 cursor-pointer group select-none"
+                className="flex items-center justify-between group"
               >
-                <div className={`mt-0.5 shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-all duration-300 ${task.done ? 'bg-purple-500 border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.4)]' : 'border-white/20 group-hover:border-purple-400/50'}`}>
-                  {task.done && <Check size={12} strokeWidth={4} className="text-white" />}
+                <div 
+                  onClick={() => toggleTask(task)}
+                  className="flex items-start gap-3 cursor-pointer select-none flex-1 pr-4"
+                >
+                  <div className={`mt-0.5 shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-all duration-300 ${task.done ? 'bg-purple-500 border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.4)]' : 'border-white/20 group-hover:border-purple-400/50'}`}>
+                    {task.done && <Check size={12} strokeWidth={4} className="text-white" />}
+                  </div>
+                  <span className={`text-xs font-space transition-all duration-300 ${task.done ? 'line-through text-white/30 decoration-purple-500/50' : 'text-white/80 group-hover:text-white'}`}>
+                    {task.text}
+                  </span>
                 </div>
-                <span className={`text-xs font-space transition-all duration-300 ${task.done ? 'line-through text-white/30 decoration-purple-500/50' : 'text-white/80 group-hover:text-white'}`}>
-                  {task.text}
-                </span>
+                <button
+                  onClick={(e) => handleDeleteTask(task.id, e)}
+                  className="p-1.5 opacity-0 group-hover:opacity-100 transition-opacity rounded bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white shrink-0"
+                  title="Borrar Tarea"
+                >
+                  <Trash2 size={12} />
+                </button>
               </div>
             )) : (
               <div className="text-[10px] text-white/30 text-center py-4">{t('dashboard.tasks.empty')}</div>
