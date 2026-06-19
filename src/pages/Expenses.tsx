@@ -156,9 +156,18 @@ const Expenses = ({ expenses, currency, operatorId, onRefresh }: ExpensesProps) 
                   required
                   type="number"
                   step="0.01"
+                  min="0"
                   className="w-full bg-white/[0.05] border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm focus:border-white/30 outline-none transition-colors"
                   value={formData.amount}
-                  onChange={e => setFormData({...formData, amount: e.target.value})}
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val === '') {
+                      setFormData({...formData, amount: ''});
+                    } else {
+                      const num = Number(val);
+                      setFormData({...formData, amount: num < 0 ? '0' : val});
+                    }
+                  }}
                 />
               </div>
             </div>

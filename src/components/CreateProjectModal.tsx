@@ -235,10 +235,19 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
               <label className="text-white/50 font-space text-[10px] uppercase tracking-widest ml-1">Cotización Total</label>
               <input 
                 required type="number" 
+                min="0"
                 className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-primary-container outline-none"
                 placeholder="0.00"
                 value={newProject.budget}
-                onChange={(e) => setNewProject({...newProject, budget: e.target.value})}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === '') {
+                    setNewProject({...newProject, budget: ''});
+                  } else {
+                    const num = Number(val);
+                    setNewProject({...newProject, budget: num < 0 ? '0' : val});
+                  }
+                }}
               />
             </div>
             
